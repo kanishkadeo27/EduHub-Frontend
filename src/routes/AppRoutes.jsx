@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout";
 import Login from "../features/auth/Login";
+import Register from "../features/auth/Register";
+
 
 const AppRoutes = () => {
   return (
@@ -8,6 +10,7 @@ const AppRoutes = () => {
       {/* Public layout */}
       <Route element={<PublicLayout />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Register />} />
 
         {/* Temporary home page */}
         <Route
