@@ -21,7 +21,7 @@ const Footer = () => {
       {/* LOGO + SOCIAL */}
       <div className="ftr-col-lg-3">
         <img
-          src="public/image/navbar-logo.png"
+          src="/image/navbar-logo.png"
           alt="EduHub"
           className="footer-logo"
         />

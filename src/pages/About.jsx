@@ -5,7 +5,7 @@ const About = () => {
 
         {/* Image */}
         <img
-          src="public\image\about.jpg"
+          src="/image/about.jpg"
           alt="About Learning Kart"
           className="w-full h-[564px] object-cover rounded-3xl"
         />

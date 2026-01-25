@@ -5,16 +5,15 @@ import Footer from "../components/common/Footer";
 const PublicLayout = () => {
   return (
     <>
-      {/* Navbar */}
       <Navbar />
 
-      {/* Main Content */}
-      <main className="pt-20 min-h-screen">
-        <Outlet />
-      </main>
+      <main className="pt-20">
+  <Outlet />
+</main>
 
-      {/* Footer */}
+
       <Footer />
+
     </>
   );
 };
