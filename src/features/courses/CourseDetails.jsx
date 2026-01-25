@@ -101,7 +101,7 @@ const CourseDetails = () => {
                     <div className="tab_panel_title">Study Material</div>
                     <ul>
                       <li>
-                        <a href="/pdf/spring_boot_tutorial.pdf" target="_blank" rel="noreferrer">
+                        <a href="/pdf/study-material/spring_boot_tutorial.pdf" target="_blank" rel="noreferrer">
                           Spring Boot PDF
                         </a>
                       </li>
