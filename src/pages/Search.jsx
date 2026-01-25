@@ -5,7 +5,6 @@ const Search = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (!query.trim()) return;
 
     // TODO: Replace with API call
@@ -13,35 +12,71 @@ const Search = () => {
   };
 
   return (
-    <section className="min-h-[60vh] flex flex-col justify-center items-center bg-gray-50 px-4">
+    <section
+      className="min-h-screen flex items-center justify-center bg-cover bg-center px-4"
+      style={{
+       backgroundImage: "url('/image/banner.jpg')"
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/20" />
 
-      {/* Heading */}
-      <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-6">
-        Welcome to My Learning Platform
-      </h1>
+      {/* Content */}
+      <div className="relative z-10 text-center w-full max-w-2xl">
 
-      {/* Search Bar */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex items-center bg-white shadow rounded-full px-4 py-2 w-full max-w-xl"
-      >
-        <input
-          type="text"
-          placeholder="Search Courses"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 outline-none px-2 text-gray-700"
-        />
+        {/* Heading */}
+        <h1 className="text-3xl sm:text-4xl font-semibold text-black mb-8">
+          Welcome to My Learning Platform
+        </h1>
 
-        <button type="submit" className="p-2">
-          <img
-            src="src\assets\image\search-new-theme.png"
-            alt="Search"
-            className="w-6 h-6"
-          />
-        </button>
-      </form>
+        {/* Search Bar */}
+        <form
+  onSubmit={handleSubmit}
+  style={{
+    background: "white",
+    borderRadius: "9999px",
+    height: "64px",
+    width: "100%",
+    maxWidth: "720px",
+    display: "flex",
+    alignItems: "center",
+    padding: "0 24px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.15)"
+  }}
+>
+  <input
+    type="text"
+    placeholder="Search Courses"
+    value={query}
+    onChange={(e) => setQuery(e.target.value)}
+    style={{
+      flex: 1,
+      border: "none",
+      outline: "none",
+      background: "transparent",
+      fontSize: "18px",
+      color: "#555",
+      boxShadow: "none"
+    }}
+  />
 
+  <button
+    type="submit"
+    style={{
+      border: "none",
+      background: "transparent",
+      cursor: "pointer"
+    }}
+  >
+    <img
+      src="/image/search-new-theme.png"
+      alt="Search"
+      style={{ width: "22px", height: "22px", opacity: 0.7 }}
+    />
+  </button>
+</form>
+
+      </div>
     </section>
   );
 };
