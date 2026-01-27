@@ -1,9 +1,10 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 
 const CourseDetails = () => {
   const { id } = useParams(); // /courses/:id
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
 
   // TEMP mock (replace with API later)
@@ -99,22 +100,63 @@ const CourseDetails = () => {
                   {/* STUDY MATERIAL */}
                   <div className="tab_panel mt-5">
                     <div className="tab_panel_title">Study Material</div>
-                    <ul>
-                      <li>
-                        <a href="/pdf/study-material/spring_boot_tutorial.pdf" target="_blank" rel="noreferrer">
-                          Spring Boot PDF
-                        </a>
-                      </li>
-                    </ul>
+                    
+                    {/* PDF Documents */}
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold mb-3">PDF Documents</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div 
+                          onClick={() => {
+                            console.log('Navigating to PDF 1');
+                            navigate(`/courses/${course.id}/pdf/1`);
+                          }}
+                          className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors border hover:border-indigo-300"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                              <h5 className="font-medium text-gray-900">Spring Boot Tutorial</h5>
+                              <p className="text-sm text-gray-600">Complete guide to Spring Boot framework</p>
+                              <span className="text-xs text-indigo-600 font-medium">Click to view →</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div 
+                          onClick={() => {
+                            console.log('Navigating to PDF 2');
+                            navigate(`/courses/${course.id}/pdf/2`);
+                          }}
+                          className="bg-gray-50 rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors border hover:border-indigo-300"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                              <h5 className="font-medium text-gray-900">React Basics Guide</h5>
+                              <p className="text-sm text-gray-600">Introduction to React concepts</p>
+                              <span className="text-xs text-indigo-600 font-medium">Click to view →</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                    <div className="mt-4" style={{ height: "400px" }}>
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src="https://www.youtube.com/embed/35EQXmHKZYs"
-                        title="YouTube tutorial"
-                        allowFullScreen
-                      />
+                    {/* Video Tutorials */}
+                    <div>
+                      <h4 className="text-lg font-semibold mb-3">Video Tutorials</h4>
+                      <div className="mt-4" style={{ height: "400px" }}>
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src="https://www.youtube.com/embed/35EQXmHKZYs"
+                          title="YouTube tutorial"
+                          allowFullScreen
+                        />
+                      </div>
                     </div>
                   </div>
 

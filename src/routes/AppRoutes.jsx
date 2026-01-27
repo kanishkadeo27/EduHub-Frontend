@@ -21,6 +21,7 @@ import CourseDetails from "../features/courses/CourseDetails";
 import CourseSyllabus from "../features/courses/CourseSyllabus";
 import MyCourses from "../features/courses/MyCourses";
 import Classroom from "../features/courses/Classroom";
+import PdfViewerPage from "../features/courses/PdfViewerPage";
 
 // Admin Features
 import CreateCourse from "../features/admin/CreateCourse";
@@ -52,6 +53,12 @@ const AppRoutes = () => {
         <Route path="/courses/:id/classroom" element={
           <StudentRoute>
             <Classroom />
+          </StudentRoute>
+        } />
+        
+        <Route path="/courses/:id/pdf/:pdfId" element={
+          <StudentRoute>
+            <PdfViewerPage />
           </StudentRoute>
         } />
 

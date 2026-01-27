@@ -73,7 +73,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
@@ -103,24 +103,6 @@ const AdminDashboard = () => {
               <div className="flex justify-between">
                 <span className="text-gray-600">User registered</span>
                 <span className="text-gray-500">3 hours ago</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Server Status</span>
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Online</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Database</span>
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Connected</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Storage</span>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">75% Used</span>
               </div>
             </div>
           </div>
