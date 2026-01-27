@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Search = () => {
   const [query, setQuery] = useState("");
@@ -6,21 +6,35 @@ const Search = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Reset search state when query is cleared
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setHasSearched(false);
+      setIsSearching(false);
+    }
+  }, [query]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!query.trim()) return;
 
     setIsSearching(true);
-    setHasSearched(true);
+    setHasSearched(false); // Don't show results section until search completes
+    setResults([]); // Clear previous results
 
     // Simulate search with mock results
     setTimeout(() => {
-      const mockResults = query.toLowerCase().includes('react') ? [
-        { id: 1, title: "React Fundamentals", type: "Course", description: "Learn React from scratch" },
-        { id: 2, title: "Advanced React Patterns", type: "Course", description: "Master advanced React concepts" }
-      ] : [];
-      
-      setResults(mockResults);
+      // Check if query still matches current state (prevents stale results)
+      if (query.trim()) {
+        const mockResults = query.toLowerCase().includes('react') ? [
+          { id: 1, title: "React Fundamentals", type: "Course", description: "Learn React from scratch" },
+          { id: 2, title: "Advanced React Patterns", type: "Course", description: "Master advanced React concepts" }
+        ] : [];
+        
+        setResults(mockResults);
+        setHasSearched(true); // Only show results after search completes
+      }
       setIsSearching(false);
     }, 1000);
   };
@@ -56,35 +70,44 @@ const Search = () => {
         </form>
 
         {/* Search Results */}
-        {hasSearched && (
+        {(hasSearched || isSearching) && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">
-              {results.length > 0 ? `Found ${results.length} result(s) for "${query}"` : `No results found for "${query}"`}
-            </h2>
-            
-            {results.length > 0 ? (
-              <div className="space-y-4">
-                {results.map((result) => (
-                  <div key={result.id} className="bg-white border rounded-lg p-6 hover:shadow-md transition">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{result.title}</h3>
-                        <span className="inline-block px-2 py-1 bg-indigo-100 text-indigo-800 text-sm rounded mt-1">
-                          {result.type}
-                        </span>
-                        <p className="text-gray-600 mt-2">{result.description}</p>
-                      </div>
-                      <button className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                ))}
+            {isSearching ? (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                <p className="text-gray-600 mt-4">Searching for "{query}"...</p>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Try searching for "react" to see sample results</p>
-              </div>
+              <>
+                <h2 className="text-xl font-semibold mb-4">
+                  {results.length > 0 ? `Found ${results.length} result(s) for "${query}"` : `No results found for "${query}"`}
+                </h2>
+                
+                {results.length > 0 ? (
+                  <div className="space-y-4">
+                    {results.map((result) => (
+                      <div key={result.id} className="bg-white border rounded-lg p-6 hover:shadow-md transition">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{result.title}</h3>
+                            <span className="inline-block px-2 py-1 bg-indigo-100 text-indigo-800 text-sm rounded mt-1">
+                              {result.type}
+                            </span>
+                            <p className="text-gray-600 mt-2">{result.description}</p>
+                          </div>
+                          <button className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+                            View Details
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Try searching for "react" to see sample results</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
