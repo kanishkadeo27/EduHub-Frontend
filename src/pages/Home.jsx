@@ -93,43 +93,28 @@ const Home = () => {
       <div className="w-full h-px bg-gray-300 my-16" />
 
       {/* ================= FOUNDER ================= */}
-      <div className="max-w-md mx-auto text-center mb-20">
-        <img
-          src="/image/cdac.jpg"
-          alt="Founder"
-          className="mx-auto rounded-full w-36 h-36 object-cover border"
-        />
-        <h3 className="mt-4 text-2xl font-semibold">CDAC</h3>
-        <p className="text-gray-500 text-lg">Founder, EduHub</p>
-      </div>
-
-      {/* ================= COMPANIES ================= */}
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16 pb-24 text-center">
-        <div>
-          <img
-            src="/image/amdocs-logo.svg.png"
-            alt="Amdocs"
-            className="mx-auto h-12"
-          />
-          <p className="mt-3 text-lg">Ex-Amdocs, SWE</p>
+      <div className="max-w-4xl mx-auto text-center mb-20 px-6">
+        <div className="mb-8">
+          <div className="relative mx-auto w-96 h-56 overflow-hidden rounded-xl shadow-2xl border-4 border-white">
+            <img
+              src="/image/HomePage/founders_image.jpeg"
+              alt="EduHub Founders"
+              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
+              style={{ objectPosition: '50% 25%' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+          </div>
         </div>
-
-        <div>
-          <img
-            src="/image/1280px-Sears_logo_(2020).svg.png"
-            alt="Sears"
-            className="mx-auto h-12"
-          />
-          <p className="mt-3 text-lg">Ex-Sears Holdings, SWE</p>
-        </div>
-
-        <div>
-          <img
-            src="/image/Nike-Logo.png"
-            alt="Nike"
-            className="mx-auto h-12"
-          />
-          <p className="mt-3 text-lg">Currently @ Nike</p>
+        <h3 className="text-3xl font-bold text-gray-900 mb-3">Meet Our Founders</h3>
+        <p className="text-gray-600 text-lg mb-6 max-w-2xl mx-auto">
+          Passionate educators and technology enthusiasts dedicated to making quality education accessible to everyone.
+        </p>
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-8 mx-4 shadow-lg border border-indigo-100">
+          <p className="text-gray-700 italic text-lg leading-relaxed">
+            "Our mission is to bridge the gap between traditional education and modern technology, 
+            creating an inclusive learning environment where every student can thrive and achieve their dreams."
+          </p>
+          <p className="text-indigo-600 font-semibold mt-4 text-lg">- EduHub Founding Team</p>
         </div>
       </div>
 
