@@ -23,7 +23,7 @@ const CourseSyllabus = () => {
   }
 
   return (
-    <section className="banner">
+    <section className="banner pt-10 pb-10">
       <div className="container">
         <div className="row justify-content-center align-items-center">
           <div className="col-md-6">

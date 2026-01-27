@@ -25,7 +25,7 @@ const CourseDetails = () => {
   if (!course) return <p className="text-center mt-20">Loading...</p>;
 
   return (
-    <section className="banner">
+    <section className="banner pt-10 pb-10">
       <div className="container">
         <div className="row">
 
