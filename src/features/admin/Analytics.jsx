@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 const Analytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState("7days");
 
   // Mock analytics data (replace with real API call)
   useEffect(() => {
@@ -42,7 +41,7 @@ const Analytics = () => {
       });
       setLoading(false);
     }, 1000);
-  }, [timeRange]);
+  }, []);
 
   if (loading) {
     return (
@@ -59,22 +58,10 @@ const Analytics = () => {
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
             <p className="text-gray-600 mt-2">Platform performance and insights</p>
-          </div>
-          <div>
-            <select 
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="7days">Last 7 Days</option>
-              <option value="30days">Last 30 Days</option>
-              <option value="90days">Last 90 Days</option>
-              <option value="1year">Last Year</option>
-            </select>
           </div>
         </div>
 

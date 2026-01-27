@@ -4,38 +4,45 @@ const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
 
   // Mock users data (replace with real API call)
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
       setUsers([
-        { id: 1, name: "John Doe", email: "john@example.com", role: "user", status: "active", joinDate: "2024-01-15" },
-        { id: 2, name: "Jane Smith", email: "jane@example.com", role: "user", status: "active", joinDate: "2024-01-20" },
-        { id: 3, name: "Admin User", email: "admin@example.com", role: "admin", status: "active", joinDate: "2024-01-01" },
-        { id: 4, name: "Bob Johnson", email: "bob@example.com", role: "user", status: "inactive", joinDate: "2024-01-25" },
+        { id: 1, name: "John Doe", email: "john@example.com", role: "user", joinDate: "2024-01-15" },
+        { id: 2, name: "Jane Smith", email: "jane@example.com", role: "user", joinDate: "2024-01-20" },
+        { id: 3, name: "Admin User", email: "admin@example.com", role: "admin", joinDate: "2024-01-01" },
+        { id: 4, name: "Bob Johnson", email: "bob@example.com", role: "user", joinDate: "2024-01-25" },
       ]);
       setLoading(false);
     }, 1000);
   }, []);
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleStatusToggle = (userId) => {
-    setUsers(users.map(user =>
-      user.id === userId
-        ? { ...user, status: user.status === "active" ? "inactive" : "active" }
-        : user
-    ));
-  };
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === "" || user.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
+  });
 
   const handleRoleChange = (userId, newRole) => {
     setUsers(users.map(user =>
       user.id === userId ? { ...user, role: newRole } : user
     ));
+  };
+
+  const handleDeleteUser = (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      setUsers(users.filter(user => user.id !== userId));
+    }
+  };
+
+  const handleUpdateUser = (userId) => {
+    // TODO: Implement update user functionality
+    alert(`Update user functionality for user ID: ${userId}`);
   };
 
   if (loading) {
@@ -71,15 +78,14 @@ const ManageUsers = () => {
               />
             </div>
             <div className="flex gap-2">
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">All Roles</option>
                 <option value="user">Users</option>
                 <option value="admin">Admins</option>
-              </select>
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
               </select>
             </div>
           </div>
@@ -96,9 +102,6 @@ const ManageUsers = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Join Date
@@ -136,31 +139,21 @@ const ManageUsers = () => {
                         <option value="admin">Admin</option>
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.status}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(user.joinDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => handleStatusToggle(user.id)}
-                        className={`mr-3 px-3 py-1 rounded text-xs font-medium ${
-                          user.status === 'active'
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
+                        onClick={() => handleUpdateUser(user.id)}
+                        className="mr-3 px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium transition-colors"
                       >
-                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                        Update
                       </button>
-                      <button className="text-blue-600 hover:text-blue-900">
-                        Edit
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium transition-colors"
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>
