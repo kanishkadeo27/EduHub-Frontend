@@ -40,7 +40,7 @@ const Search = () => {
   };
 
   return (
-    <section className="container mx-auto pt-24 px-6">
+    <section className="container mx-auto pt-24 px-6 pb-20">
       <div className="max-w-4xl mx-auto">
         
         {/* Search Header */}
