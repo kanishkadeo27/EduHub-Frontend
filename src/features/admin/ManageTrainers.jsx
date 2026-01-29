@@ -1,62 +1,57 @@
 import { useState, useEffect } from "react";
-// import { trainerService } from "../../api";
-// import useApi from "../../hooks/useApi";
+import { useNavigate } from "react-router-dom";
+import { adminService } from "../../api";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const ManageTrainers = () => {
+  const navigate = useNavigate();
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("");
+  const [message, setMessage] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    trainerId: null,
+    trainerName: ""
+  });
 
-  // TODO: Replace with actual API when trainerService is implemented
-  // const { data: trainersData, loading, error, execute: fetchTrainers } = useApi(trainerService.getAdminTrainers);
-  // const { execute: deleteTrainer } = useApi(trainerService.deleteTrainer);
-
-  // Load trainers on component mount (using mock data for now)
+  // Load trainers from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setTrainers([
-        { 
-          trainerId: 1, 
-          trainerName: "John Smith", 
-          description: "Expert Java developer with 10+ years of experience in enterprise applications.", 
-          rating: 4.8, 
-          imageUrl: "/image/teachers/author1.jpg"
-        },
-        { 
-          trainerId: 2, 
-          trainerName: "Sarah Johnson", 
-          description: "Full-stack developer specializing in React and Node.js with passion for teaching.", 
-          rating: 4.9, 
-          imageUrl: "/image/teachers/author1.jpg"
-        },
-        { 
-          trainerId: 3, 
-          trainerName: "Mike Wilson", 
-          description: "Senior software architect with expertise in microservices and cloud technologies.", 
-          rating: 4.7, 
-          imageUrl: "/image/teachers/author1.jpg"
-        },
-        { 
-          trainerId: 4, 
-          trainerName: "Emily Davis", 
-          description: "Data science expert with PhD in Computer Science and 8 years industry experience.", 
-          rating: 4.6, 
-          imageUrl: "/image/teachers/author1.jpg"
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadTrainers();
   }, []);
 
+  const loadTrainers = async () => {
+    try {
+      setLoading(true);
+      const trainersData = await adminService.getAllTrainers();
+      const trainersList = trainersData.data || trainersData.trainers || trainersData;
+      setTrainers(Array.isArray(trainersList) ? trainersList : []);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to load trainers' });
+      setTrainers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-hide messages after 5 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   const filteredTrainers = trainers.filter(trainer => {
-    const matchesSearch = trainer.trainerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         trainer.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (trainer.trainerName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (trainer.description || "").toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesRating = ratingFilter === "";
-    if (!matchesRating) {
-      const trainerRating = Math.floor(trainer.rating);
+    if (!matchesRating && trainer.rating !== null && trainer.rating !== undefined) {
+      const trainerRating = Math.floor(parseFloat(trainer.rating));
       const filterRating = parseInt(ratingFilter);
       matchesRating = trainerRating === filterRating;
     }
@@ -65,41 +60,62 @@ const ManageTrainers = () => {
   });
 
   const handleRatingChange = async (trainerId, newRating) => {
+    const originalTrainer = trainers.find(t => t.trainerId === trainerId);
+    
     try {
-      // TODO: Replace with actual API call when trainerService is implemented
-      // const trainer = trainers.find(t => t.trainerId === trainerId);
-      // const updatedTrainer = { ...trainer, rating: parseFloat(newRating) };
-      // await trainerService.updateTrainer(trainerId, updatedTrainer);
-      
-      console.log("Would update trainer rating:", trainerId, newRating);
-      
+      // Update local state immediately for better UX
       setTrainers(trainers.map(trainer =>
         trainer.trainerId === trainerId ? { ...trainer, rating: parseFloat(newRating) } : trainer
       ));
+      
+      // Call API to persist the change with full trainer data
+      const payload = {
+        trainerName: originalTrainer.trainerName,
+        description: originalTrainer.description,
+        rating: parseFloat(newRating),
+        imageUrl: originalTrainer.imageUrl || null
+      };
+      
+      await adminService.updateTrainer(trainerId, payload);
+      
+      setMessage({ type: 'success', text: 'Trainer rating updated successfully!' });
     } catch (error) {
-      console.error("Error updating trainer rating:", error);
-      alert("Failed to update trainer rating. Please try again.");
+      // Revert local state on error
+      await loadTrainers();
+      setMessage({ type: 'error', text: error.message || 'Failed to update trainer rating. Please try again.' });
     }
   };
 
   const handleDeleteTrainer = async (trainerId) => {
-    if (window.confirm('Are you sure you want to delete this trainer?')) {
-      try {
-        // TODO: Replace with actual API call when trainerService is implemented
-        // await deleteTrainer(trainerId);
-        console.log("Would delete trainer:", trainerId);
-        
-        setTrainers(trainers.filter(trainer => trainer.trainerId !== trainerId));
-      } catch (error) {
-        console.error("Error deleting trainer:", error);
-        alert("Failed to delete trainer. Please try again.");
-      }
+    try {
+      await adminService.deleteTrainer(trainerId);
+      
+      setMessage({ type: 'success', text: 'Trainer deleted successfully!' });
+      
+      setConfirmModal({ isOpen: false, trainerId: null, trainerName: "" });
+      
+      await loadTrainers();
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'Failed to delete trainer. Please try again.' });
+      setConfirmModal({ isOpen: false, trainerId: null, trainerName: "" });
     }
+  };
+
+  const openDeleteModal = (trainer) => {
+    setConfirmModal({
+      isOpen: true,
+      trainerId: trainer.trainerId,
+      trainerName: trainer.trainerName
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setConfirmModal({ isOpen: false, trainerId: null, trainerName: "" });
   };
 
   const handleManageTrainer = (trainerId) => {
     // Navigate to manage trainer page
-    window.location.href = `/admin/manage/${trainerId}/trainer`;
+    navigate(`/admin/manage/${trainerId}/trainer`);
   };
 
   if (loading) {
@@ -121,6 +137,26 @@ const ManageTrainers = () => {
           <h1 className="text-3xl font-bold text-gray-900">Manage Trainers</h1>
           <p className="text-gray-600 mt-2">View and manage all platform trainers</p>
         </div>
+
+        {/* Messages */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-xl border ${
+            message.type === 'success' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                {message.type === 'success' ? (
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                ) : (
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                )}
+              </svg>
+              <span className="font-medium">{message.text}</span>
+            </div>
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -205,18 +241,43 @@ const ManageTrainers = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex text-yellow-400 mr-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <svg
-                              key={star}
-                              className={`w-4 h-4 ${
-                                trainer.rating >= star ? 'fill-current' : 'fill-gray-300'
-                              }`}
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            const rating = parseFloat(trainer.rating) || 0;
+                            const filled = rating >= star;
+                            const partiallyFilled = rating > star - 1 && rating < star;
+                            const fillPercentage = partiallyFilled ? ((rating - (star - 1)) * 100) : 0;
+                            
+                            return (
+                              <div key={star} className="relative w-4 h-4">
+                                {/* Background star (empty) */}
+                                <svg
+                                  className="absolute inset-0 w-4 h-4 fill-gray-300"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                
+                                {/* Filled star */}
+                                {(filled || partiallyFilled) && (
+                                  <div 
+                                    className="absolute inset-0 overflow-hidden"
+                                    style={{ 
+                                      width: filled ? '100%' : `${fillPercentage}%` 
+                                    }}
+                                  >
+                                    <svg
+                                      className="w-4 h-4 fill-yellow-400"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
+                        <span className="text-gray-600 text-sm mr-3">{trainer.rating || '0.0'}</span>
                         <input
                           type="number"
                           step="0.1"
@@ -236,7 +297,7 @@ const ManageTrainers = () => {
                         Manage
                       </button>
                       <button
-                        onClick={() => handleDeleteTrainer(trainer.trainerId)}
+                        onClick={() => openDeleteModal(trainer)}
                         className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium transition-colors"
                       >
                         Delete
@@ -268,6 +329,18 @@ const ManageTrainers = () => {
             </div>
           </div>
         </div>
+
+        {/* Custom Confirmation Modal */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          onClose={closeDeleteModal}
+          onConfirm={() => handleDeleteTrainer(confirmModal.trainerId)}
+          title="Delete Trainer"
+          message={`Are you sure you want to delete "${confirmModal.trainerName}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          type="danger"
+        />
 
       </div>
     </div>

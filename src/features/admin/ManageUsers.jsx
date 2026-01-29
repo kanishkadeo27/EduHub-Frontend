@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { adminService } from "../../api";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const ManageUsers = () => {
   const { user: currentUser } = useAuth();
@@ -12,6 +13,12 @@ const ManageUsers = () => {
   const [updatingUserId, setUpdatingUserId] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [pendingRoleChanges, setPendingRoleChanges] = useState({});
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    userId: null,
+    userName: "",
+    userEmail: ""
+  });
 
   // Load users from API
   useEffect(() => {
@@ -79,25 +86,40 @@ const ManageUsers = () => {
 
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        setDeletingUserId(userId);
-        
-        // Call API to delete user
-        await adminService.deleteUser(userId);
-        
-        // Show success message
-        setUpdateStatus('success');
-        
-        // Refresh users list
-        await loadUsers();
-        
-      } catch (error) {
-        setUpdateStatus('error');
-      } finally {
-        setDeletingUserId(null);
-      }
+    try {
+      setDeletingUserId(userId);
+      
+      // Call API to delete user
+      await adminService.deleteUser(userId);
+      
+      // Show success message
+      setUpdateStatus('success');
+      
+      // Close modal
+      setConfirmModal({ isOpen: false, userId: null, userName: "", userEmail: "" });
+      
+      // Refresh users list
+      await loadUsers();
+      
+    } catch (error) {
+      setUpdateStatus('error');
+      setConfirmModal({ isOpen: false, userId: null, userName: "", userEmail: "" });
+    } finally {
+      setDeletingUserId(null);
     }
+  };
+
+  const openDeleteModal = (user) => {
+    setConfirmModal({
+      isOpen: true,
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setConfirmModal({ isOpen: false, userId: null, userName: "", userEmail: "" });
   };
 
   const handleUpdateUser = async (userId) => {
@@ -291,7 +313,7 @@ const ManageUsers = () => {
                             {updatingUserId === user.id ? 'Updating...' : 'Update'}
                           </button>
                           <button
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => openDeleteModal(user)}
                             disabled={updatingUserId === user.id || deletingUserId === user.id}
                             className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                               updatingUserId === user.id || deletingUserId === user.id
@@ -339,6 +361,18 @@ const ManageUsers = () => {
             </div>
           </div>
         </div>
+
+        {/* Custom Confirmation Modal */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          onClose={closeDeleteModal}
+          onConfirm={() => handleDeleteUser(confirmModal.userId)}
+          title="Delete User"
+          message={`Are you sure you want to delete "${confirmModal.userName}" (${confirmModal.userEmail})? This action cannot be undone and will permanently remove all user data.`}
+          confirmText="Delete User"
+          cancelText="Cancel"
+          type="danger"
+        />
 
       </div>
     </div>

@@ -1,7 +1,39 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { adminService } from "../../api";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState({
+    totalTrainers: 0,
+    totalCourses: 24,
+    totalStudents: 1234,
+    revenue: 45678,
+    enrollments: 3456
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Load trainer stats
+  useEffect(() => {
+    loadTrainerStats();
+  }, []);
+
+  const loadTrainerStats = async () => {
+    try {
+      const trainersData = await adminService.getAllTrainers();
+      const trainersList = trainersData.data || trainersData.trainers || trainersData;
+      const trainersCount = Array.isArray(trainersList) ? trainersList.length : 0;
+      
+      setStats(prev => ({
+        ...prev,
+        totalTrainers: trainersCount
+      }));
+    } catch (error) {
+      // Keep default value of 0 if API fails
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -14,7 +46,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -24,7 +56,23 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                <p className="text-2xl font-semibold text-gray-900">24</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.totalCourses}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Trainers</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalTrainers}
+                </p>
               </div>
             </div>
           </div>
@@ -38,7 +86,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-2xl font-semibold text-gray-900">1,234</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.totalStudents}</p>
               </div>
             </div>
           </div>
@@ -52,7 +100,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Revenue</p>
-                <p className="text-2xl font-semibold text-gray-900">₹45,678</p>
+                <p className="text-2xl font-semibold text-gray-900">₹{stats.revenue.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -66,7 +114,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Enrollments</p>
-                <p className="text-2xl font-semibold text-gray-900">3,456</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.enrollments.toLocaleString()}</p>
               </div>
             </div>
           </div>

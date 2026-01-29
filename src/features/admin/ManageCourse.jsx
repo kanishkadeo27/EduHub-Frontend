@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-// import { courseService, trainerService } from "../../api";
-// import useApi from "../../hooks/useApi";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const ManageCourse = () => {
   const { id } = useParams();
@@ -10,6 +9,10 @@ const ManageCourse = () => {
   const [updating, setUpdating] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [trainers, setTrainers] = useState([]);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    courseName: ""
+  });
 
   const [course, setCourse] = useState({
     courseId: "",
@@ -26,20 +29,10 @@ const ManageCourse = () => {
     trainerId: ""
   });
 
-  // TODO: Replace with actual API when courseService and trainerService are implemented
-  // const { loading: updating, error, execute: updateCourse } = useApi(courseService.updateCourse);
-  // const { execute: deleteCourse } = useApi(courseService.deleteCourse);
-  // const { execute: fetchTrainers } = useApi(trainerService.getAdminTrainers);
-
   // Load trainers for dropdown (using mock data for now)
   useEffect(() => {
     const loadTrainers = async () => {
       try {
-        // TODO: Replace with actual API call when trainerService is implemented
-        // const data = await fetchTrainers();
-        // setTrainers(data || []);
-        
-        // Use mock data for now
         setTrainers([
           { trainerId: 1, trainerName: "John Smith" },
           { trainerId: 2, trainerName: "Sarah Johnson" },
@@ -48,8 +41,6 @@ const ManageCourse = () => {
           { trainerId: 5, trainerName: "Mohd Khushhal" }
         ]);
       } catch (err) {
-        console.error("Failed to load trainers:", err);
-        // Use mock data as fallback
         setTrainers([
           { trainerId: 1, trainerName: "John Smith" },
           { trainerId: 2, trainerName: "Sarah Johnson" },
@@ -66,8 +57,6 @@ const ManageCourse = () => {
   useEffect(() => {
     const loadCourse = async () => {
       try {
-        // TODO: Replace with actual API call when courseService is implemented
-        // Mock course data
         const mockCourse = {
           courseId: parseInt(id),
           courseName: "Complete Java Development Bootcamp",
@@ -85,7 +74,6 @@ const ManageCourse = () => {
 
         setCourse(mockCourse);
       } catch (error) {
-        console.error("Error loading course:", error);
         setSubmitStatus('error');
       } finally {
         setLoading(false);
@@ -153,21 +141,14 @@ const ManageCourse = () => {
 
       console.log("Would update course:", payload);
 
-      // TODO: Replace with actual API call when courseService is implemented
-      // await updateCourse(course.courseId, payload);
-      
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log("Course updated successfully (mock)");
       setSubmitStatus('success');
       
-      // Redirect to courses list after 2 seconds
       setTimeout(() => {
         navigate("/admin/manage-courses");
       }, 2000);
     } catch (err) {
-      console.error("Error updating course:", err);
       setSubmitStatus('error');
     } finally {
       setUpdating(false);
@@ -175,19 +156,27 @@ const ManageCourse = () => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-      try {
-        // TODO: Replace with actual API call when courseService is implemented
-        // await deleteCourse(course.courseId);
-        console.log("Would delete course:", course.courseId);
-        
-        console.log("Course deleted successfully (mock)");
-        navigate("/admin/manage-courses");
-      } catch (err) {
-        console.error("Error deleting course:", err);
-        setSubmitStatus('error');
-      }
+    try {
+      console.log("Would delete course:", course.courseId);
+      
+      setConfirmModal({ isOpen: false, courseName: "" });
+      
+      navigate("/admin/manage-courses");
+    } catch (err) {
+      setSubmitStatus('error');
+      setConfirmModal({ isOpen: false, courseName: "" });
     }
+  };
+
+  const openDeleteModal = () => {
+    setConfirmModal({
+      isOpen: true,
+      courseName: course.courseName
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setConfirmModal({ isOpen: false, courseName: "" });
   };
 
   if (loading) {
@@ -441,7 +430,7 @@ const ManageCourse = () => {
             <div className="flex justify-between mt-8">
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={openDeleteModal}
                 disabled={updating}
                 className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -472,6 +461,18 @@ const ManageCourse = () => {
             </div>
           </form>
         </div>
+
+        {/* Custom Confirmation Modal */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          onClose={closeDeleteModal}
+          onConfirm={handleDelete}
+          title="Delete Course"
+          message={`Are you sure you want to delete "${confirmModal.courseName}"? This action cannot be undone and will permanently remove the course and all associated content.`}
+          confirmText="Delete Course"
+          cancelText="Cancel"
+          type="danger"
+        />
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import { trainerService } from "../../api";
-// import useApi from "../../hooks/useApi";
+import { adminService } from "../../api";
 
 const CreateTrainer = () => {
   const navigate = useNavigate();
@@ -12,8 +11,6 @@ const CreateTrainer = () => {
     imageUrl: "",
   });
 
-  // TODO: Replace with actual API when trainerService is implemented
-  // const { loading, error, execute: createTrainer } = useApi(trainerService.createTrainer);
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -34,7 +31,6 @@ const CreateTrainer = () => {
     setErrorMessage("");
     setLoading(true);
 
-    // Frontend validation based on backend Trainer entity constraints
     if (!trainer.trainerName.trim()) {
       setErrorMessage("Trainer name is required");
       setSubmitStatus('error');
@@ -88,21 +84,14 @@ const CreateTrainer = () => {
       const payload = {
         trainerName: trainer.trainerName.trim(),
         description: trainer.description.trim(),
-        rating: trainer.rating ? parseFloat(trainer.rating) : 0.0,
+        rating: trainer.rating ? parseFloat(trainer.rating) : 4.5,
         imageUrl: trainer.imageUrl.trim() || null,
       };
 
-      // TODO: Replace with actual API call when trainerService is implemented
-      // await createTrainer(payload);
-      console.log("Would create trainer:", payload);
+      await adminService.createTrainer(payload);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log("Trainer created successfully (mock)");
       setSubmitStatus('success');
       
-      // Reset form after successful creation
       setTrainer({
         trainerName: "",
         description: "",
@@ -110,12 +99,10 @@ const CreateTrainer = () => {
         imageUrl: "",
       });
 
-      // Redirect to manage trainers page after 2 seconds
       setTimeout(() => {
         navigate("/admin/trainers");
       }, 2000);
     } catch (err) {
-      console.error("Error creating trainer:", err);
       setSubmitStatus('error');
       setErrorMessage(err.message || "Failed to create trainer. Please try again.");
     } finally {
@@ -162,19 +149,43 @@ const CreateTrainer = () => {
                   {trainer.rating && (
                     <div className="flex items-center mt-1 mb-2">
                       <div className="flex text-yellow-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-4 h-4 ${
-                              parseFloat(trainer.rating) >= star ? 'fill-current' : 'fill-gray-300'
-                            }`}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const rating = parseFloat(trainer.rating) || 0;
+                          const filled = rating >= star;
+                          const partiallyFilled = rating > star - 1 && rating < star;
+                          const fillPercentage = partiallyFilled ? ((rating - (star - 1)) * 100) : 0;
+                          
+                          return (
+                            <div key={star} className="relative w-4 h-4">
+                              {/* Background star (empty) */}
+                              <svg
+                                className="absolute inset-0 w-4 h-4 fill-gray-300"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              
+                              {/* Filled star */}
+                              {(filled || partiallyFilled) && (
+                                <div 
+                                  className="absolute inset-0 overflow-hidden"
+                                  style={{ 
+                                    width: filled ? '100%' : `${fillPercentage}%` 
+                                  }}
+                                >
+                                  <svg
+                                    className="w-4 h-4 fill-yellow-400"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <span className="text-gray-600 text-sm ml-2">{trainer.rating}</span>
+                      <span className="text-gray-600 text-sm ml-2">{trainer.rating || '0.0'}</span>
                     </div>
                   )}
                   
@@ -223,17 +234,18 @@ const CreateTrainer = () => {
                   value={trainer.trainerName}
                   onChange={(e) => setTrainer({ ...trainer, trainerName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter trainer's full name"
+                  placeholder="Enter trainer's full name (3-200 characters)"
                   required
                   disabled={loading}
                   minLength={3}
+                  maxLength={200}
                 />
               </div>
 
               {/* Rating */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rating <span className="text-gray-500">(0.0-5.0)</span>
+                  Rating <span className="text-gray-500">(0.0-5.0, default: 4.5)</span>
                 </label>
                 <input
                   type="number"
@@ -243,7 +255,7 @@ const CreateTrainer = () => {
                   value={trainer.rating}
                   onChange={(e) => setTrainer({ ...trainer, rating: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g., 4.5"
+                  placeholder="4.5"
                   disabled={loading}
                 />
               </div>
@@ -276,9 +288,11 @@ const CreateTrainer = () => {
                   onChange={(e) => setTrainer({ ...trainer, description: e.target.value })}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Describe the trainer's background, expertise, and teaching experience..."
+                  placeholder="Describe the trainer's background, expertise, and teaching experience (10-1000 characters)..."
                   required
                   disabled={loading}
+                  minLength={10}
+                  maxLength={1000}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   This will be displayed on the trainer's profile and course pages.
