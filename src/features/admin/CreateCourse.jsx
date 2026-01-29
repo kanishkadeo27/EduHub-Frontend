@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import { courseService, trainerService } from "../../api";
-// import useApi from "../../hooks/useApi";
 
 const CreateCourse = () => {
   const navigate = useNavigate();
@@ -23,19 +21,10 @@ const CreateCourse = () => {
     trainerId: ""
   });
 
-  // TODO: Replace with actual API when courseService and trainerService are implemented
-  // const { loading, error, execute: createCourse } = useApi(courseService.createCourse);
-  // const { execute: fetchTrainers } = useApi(trainerService.getAdminTrainers);
-
   // Load trainers for dropdown (using mock data for now)
   useEffect(() => {
     const loadTrainers = async () => {
       try {
-        // TODO: Replace with actual API call when trainerService is implemented
-        // const data = await fetchTrainers();
-        // setTrainers(data || []);
-        
-        // Use mock data for now
         setTrainers([
           { trainerId: 1, trainerName: "John Smith" },
           { trainerId: 2, trainerName: "Sarah Johnson" },
@@ -44,8 +33,6 @@ const CreateCourse = () => {
           { trainerId: 5, trainerName: "Mohd Khushhal" }
         ]);
       } catch (err) {
-        console.error("Failed to load trainers:", err);
-        // Use mock data as fallback
         setTrainers([
           { trainerId: 1, trainerName: "John Smith" },
           { trainerId: 2, trainerName: "Sarah Johnson" },
@@ -122,10 +109,8 @@ const CreateCourse = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log("Course created successfully (mock)");
       setSubmitStatus('success');
       
-      // Reset form after successful creation
       setCourse({
         courseName: "",
         description: "",
@@ -140,12 +125,10 @@ const CreateCourse = () => {
         trainerId: ""
       });
 
-      // Redirect to all courses after 2 seconds
       setTimeout(() => {
         navigate("/admin/manage-courses");
       }, 2000);
     } catch (err) {
-      console.error("Error creating course:", err);
       setSubmitStatus('error');
     } finally {
       setLoading(false);

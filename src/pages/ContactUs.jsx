@@ -97,7 +97,6 @@ const ContactUs = () => {
         message: form.message.trim(),
       });
 
-      console.log("Contact form submitted successfully");
       setSubmitStatus('success');
       
       // Reset form based on user status
@@ -116,7 +115,6 @@ const ContactUs = () => {
         });
       }
     } catch (err) {
-      console.error("Error submitting contact form:", err);
       setSubmitStatus('error');
     }
   };

@@ -121,8 +121,6 @@ const PdfViewerPage = () => {
             title={pdfData.title}
             height="calc(100vh - 200px)"
             showControls={true}
-            onLoadSuccess={() => console.log('PDF loaded successfully')}
-            onLoadError={() => console.error('Failed to load PDF')}
           />
         </div>
 

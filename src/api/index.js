@@ -2,8 +2,6 @@
 import authService from './services/authService';
 import userService from './services/userService';
 import adminService from './services/adminService';
-import courseService from './services/courseService';
-import trainerService from './services/trainerService';
 import contactService from './services/contactService';
 import apiClient from './config';
 
@@ -12,8 +10,6 @@ export {
   authService,
   userService,
   adminService,
-  courseService,
-  trainerService,
   contactService,
   apiClient
 };
@@ -23,8 +19,6 @@ const api = {
   auth: authService,
   user: userService,
   admin: adminService,
-  course: courseService,
-  trainer: trainerService,
   contact: contactService,
   client: apiClient
 };

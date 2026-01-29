@@ -139,8 +139,6 @@ const ManageCourse = () => {
         trainerId: parseInt(course.trainerId)
       };
 
-      console.log("Would update course:", payload);
-
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setSubmitStatus('success');
@@ -157,8 +155,6 @@ const ManageCourse = () => {
 
   const handleDelete = async () => {
     try {
-      console.log("Would delete course:", course.courseId);
-      
       setConfirmModal({ isOpen: false, courseName: "" });
       
       navigate("/admin/manage-courses");

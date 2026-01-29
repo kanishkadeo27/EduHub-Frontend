@@ -13,7 +13,6 @@ const AdminNavbar = () => {
       await logout();
       navigate("/");
     } catch (error) {
-      console.error("Logout error:", error);
       navigate("/");
     }
   };

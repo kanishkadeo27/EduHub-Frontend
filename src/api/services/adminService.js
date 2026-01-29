@@ -53,6 +53,12 @@ const adminService = {
   updateTrainer: async (trainerId, trainerData) => {
     const response = await apiClient.put(`/admin/trainers/${trainerId}`, trainerData);
     return response.data;
+  },
+
+  // Get dashboard stats
+  getDashboardStats: async () => {
+    const response = await apiClient.get('/admin/dashboard');
+    return response.data;
   }
 };
 

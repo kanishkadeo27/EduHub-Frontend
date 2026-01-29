@@ -24,9 +24,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        console.log("Restored user from localStorage:", parsedUser);
       } catch (error) {
-        console.error("Error parsing user data:", error);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       }
@@ -37,11 +35,7 @@ export const AuthProvider = ({ children }) => {
   // Real login function using backend API
   const login = async (email, password) => {
     try {
-      console.log("Login attempt for:", email);
-      
-      // Use authService for API call
       const data = await authService.login({ email, password });
-      console.log("Login response:", data);
 
       // Handle different possible response structures from backend
       const token = data.token || data.accessToken || data.jwt;
@@ -61,11 +55,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("user", JSON.stringify(userData));
       
       setUser(userData);
-      console.log("Login successful, user set:", userData);
       return data;
     } catch (error) {
-      console.error("Login error:", error);
-      
       // Provide user-friendly error messages based on status code
       let userFriendlyMessage;
       if (error.status) {
@@ -105,15 +96,9 @@ export const AuthProvider = ({ children }) => {
   // Real register function using backend API
   const register = async (name, email, password) => {
     try {
-      console.log("Registration attempt for:", email);
-      
-      // Use authService for API call
       const data = await authService.register({ name, email, password });
-      console.log("Registration response:", data);
       return data;
     } catch (error) {
-      console.error("Registration error:", error);
-      
       // Provide user-friendly error messages based on status code
       let userFriendlyMessage;
       if (error.status) {
@@ -149,13 +134,9 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = async () => {
-    console.log("Logging out user...");
-    
-    // Clear local storage and user state
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    console.log("Local storage cleared, user logged out");
   };
 
   // Helper function to normalize role (handles ROLE_USER/ROLE_ADMIN format)
@@ -202,12 +183,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     getAuthHeader
   };
-
-  console.log("AuthProvider rendering with value:", { 
-    user: user ? `${user.name} (${user.role})` : null, 
-    loading,
-    isAuthenticated: isAuthenticated()
-  });
 
   return (
     <AuthContext.Provider value={value}>

@@ -6,30 +6,54 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({
     totalTrainers: 0,
-    totalCourses: 24,
-    totalStudents: 1234,
-    revenue: 45678,
-    enrollments: 3456
+    totalCourses: 0,
+    totalStudents: 0,
+    totalRevenue: 0,
+    totalEnrollments: 0,
+    recentEnrollmentAgo: '',
+    recentCoursePublishedAgo: '',
+    recentUserRegisteredAgo: ''
   });
   const [loading, setLoading] = useState(true);
 
-  // Load trainer stats
+  // Load dashboard stats
   useEffect(() => {
-    loadTrainerStats();
+    loadDashboardStats();
   }, []);
 
-  const loadTrainerStats = async () => {
+  const loadDashboardStats = async () => {
     try {
+      // Load main dashboard stats
+      const dashboardData = await adminService.getDashboardStats();
+      const statsData = dashboardData.data || dashboardData;
+      
+      // Load trainers count separately since it's not in dashboard API
       const trainersData = await adminService.getAllTrainers();
       const trainersList = trainersData.data || trainersData.trainers || trainersData;
       const trainersCount = Array.isArray(trainersList) ? trainersList.length : 0;
       
-      setStats(prev => ({
-        ...prev,
-        totalTrainers: trainersCount
-      }));
+      setStats({
+        totalTrainers: trainersCount,
+        totalCourses: statsData.totalCourses || 0,
+        totalStudents: statsData.totalStudents || 0,
+        totalRevenue: statsData.totalRevenue || 0,
+        totalEnrollments: statsData.totalEnrollments || 0,
+        recentEnrollmentAgo: statsData.recentEnrollmentAgo || '',
+        recentCoursePublishedAgo: statsData.recentCoursePublishedAgo || '',
+        recentUserRegisteredAgo: statsData.recentUserRegisteredAgo || ''
+      });
     } catch (error) {
-      // Keep default value of 0 if API fails
+      // Keep default values if API fails
+      setStats({
+        totalTrainers: 0,
+        totalCourses: 0,
+        totalStudents: 0,
+        totalRevenue: 0,
+        totalEnrollments: 0,
+        recentEnrollmentAgo: '',
+        recentCoursePublishedAgo: '',
+        recentUserRegisteredAgo: ''
+      });
     } finally {
       setLoading(false);
     }
@@ -56,7 +80,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.totalCourses}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalCourses.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -71,7 +97,7 @@ const AdminDashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Trainers</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {loading ? '...' : stats.totalTrainers}
+                  {loading ? '...' : stats.totalTrainers.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -86,7 +112,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.totalStudents}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalStudents.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -100,7 +128,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Revenue</p>
-                <p className="text-2xl font-semibold text-gray-900">₹{stats.revenue.toLocaleString()}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : `₹${stats.totalRevenue.toLocaleString()}`}
+                </p>
               </div>
             </div>
           </div>
@@ -114,7 +144,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Enrollments</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.enrollments.toLocaleString()}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalEnrollments.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -145,26 +177,33 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Activity - Commented out for now */}
-        {/*
-        <div className="bg-white rounded-lg shadow p-6 mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">New enrollment</span>
-              <span className="text-gray-500">2 min ago</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Course published</span>
-              <span className="text-gray-500">1 hour ago</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">User registered</span>
-              <span className="text-gray-500">3 hours ago</span>
+        {/* Recent Activity */}
+        {!loading && (stats.recentEnrollmentAgo || stats.recentCoursePublishedAgo || stats.recentUserRegisteredAgo) && (
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+            <div className="space-y-3 text-sm">
+              {stats.recentEnrollmentAgo && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">New enrollment</span>
+                  <span className="text-gray-500">{stats.recentEnrollmentAgo}</span>
+                </div>
+              )}
+              {stats.recentCoursePublishedAgo && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Course published</span>
+                  <span className="text-gray-500">{stats.recentCoursePublishedAgo}</span>
+                </div>
+              )}
+              {stats.recentUserRegisteredAgo && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">User registered</span>
+                  <span className="text-gray-500">{stats.recentUserRegisteredAgo}</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-        */}
+        )}
+        
 
       </div>
     </div>

@@ -98,12 +98,8 @@ const Profile = () => {
         password: user.password,
       };
 
-      console.log("Updating profile:", payload);
-      console.log("User Role:", userRole);
-
       await updateProfile(payload);
       
-      console.log("Profile updated successfully");
       setSubmitStatus('success');
       
       // Update the user state with new data (email remains unchanged)
@@ -125,7 +121,6 @@ const Profile = () => {
         password: ""
       }));
     } catch (err) {
-      console.error("Error updating profile:", err);
       setSubmitStatus('error');
     }
   };

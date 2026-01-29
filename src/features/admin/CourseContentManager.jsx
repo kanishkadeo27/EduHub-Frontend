@@ -73,7 +73,6 @@ const CourseContentManager = () => {
         
         setCourses(mockCourses);
       } catch (error) {
-        console.error("Error loading courses:", error);
         setMessage({ type: 'error', text: 'Failed to load courses' });
       } finally {
         setLoading(false);
@@ -164,7 +163,6 @@ const CourseContentManager = () => {
         setContentPairs(updatedContentPairs);
         
       } catch (error) {
-        console.error("Error loading course content:", error);
         setMessage({ type: 'error', text: 'Failed to load course content' });
       }
     };
@@ -241,7 +239,6 @@ const CourseContentManager = () => {
       }, 2000);
       
     } catch (error) {
-      console.error("Error saving course content:", error);
       setMessage({ type: 'error', text: 'Failed to save course content. Please try again.' });
     } finally {
       setSaving(false);
