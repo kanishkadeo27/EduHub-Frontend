@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { adminService } from "../../api";
 
 const CreateTrainer = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
-  const [errorMessage, setErrorMessage] = useState("");
   const [trainer, setTrainer] = useState({
     trainerName: "",
     description: "",
@@ -13,12 +11,15 @@ const CreateTrainer = () => {
     imageUrl: "",
   });
 
+  const [loading, setLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+
   // Auto-fade messages after 5 seconds
   useEffect(() => {
     if (submitStatus) {
       const timer = setTimeout(() => {
         setSubmitStatus(null);
-        setErrorMessage("");
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -26,11 +27,10 @@ const CreateTrainer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setSubmitStatus(null);
     setErrorMessage("");
+    setLoading(true);
 
-    // Frontend validation based on backend Trainer entity constraints
     if (!trainer.trainerName.trim()) {
       setErrorMessage("Trainer name is required");
       setSubmitStatus('error');
@@ -84,88 +84,27 @@ const CreateTrainer = () => {
       const payload = {
         trainerName: trainer.trainerName.trim(),
         description: trainer.description.trim(),
-        rating: trainer.rating ? parseFloat(trainer.rating) : 0.0,
+        rating: trainer.rating ? parseFloat(trainer.rating) : 4.5,
         imageUrl: trainer.imageUrl.trim() || null,
       };
 
-      const response = await fetch("http://localhost:8080/api/admin/trainers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify(payload),
+      await adminService.createTrainer(payload);
+      
+      setSubmitStatus('success');
+      
+      setTrainer({
+        trainerName: "",
+        description: "",
+        rating: "",
+        imageUrl: "",
       });
 
-      if (response.ok) {
-        console.log("Trainer created successfully");
-        setSubmitStatus('success');
-        
-        // Reset form after successful creation
-        setTrainer({
-          trainerName: "",
-          description: "",
-          rating: "",
-          imageUrl: "",
-        });
-
-        // Redirect to manage trainers page after 2 seconds
-        setTimeout(() => {
-          navigate("/admin/dashboard");
-        }, 2000);
-      } else {
-        // Handle error responses
-        let errorMessage;
-        const contentType = response.headers.get("content-type");
-        
-        try {
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error;
-          } else {
-            const errorText = await response.text();
-            errorMessage = errorText;
-          }
-        } catch (parseError) {
-          console.error("Error parsing error response:", parseError);
-          errorMessage = null;
-        }
-        
-        // Provide user-friendly error messages
-        let userFriendlyMessage;
-        switch (response.status) {
-          case 400:
-            userFriendlyMessage = errorMessage || "Invalid trainer data. Please check all fields and try again.";
-            break;
-          case 401:
-            userFriendlyMessage = errorMessage || "Authentication required. Please log in again.";
-            break;
-          case 403:
-            userFriendlyMessage = errorMessage || "Access denied. You don't have permission to create trainers.";
-            break;
-          case 409:
-            userFriendlyMessage = errorMessage || "A trainer with this name already exists.";
-            break;
-          case 500:
-            userFriendlyMessage = errorMessage || "Server error occurred. Please try again later.";
-            break;
-          default:
-            userFriendlyMessage = errorMessage || `Failed to create trainer. Please try again. (Error ${response.status})`;
-        }
-        
-        console.error("Trainer creation failed:", userFriendlyMessage);
-        setErrorMessage(userFriendlyMessage);
-        setSubmitStatus('error');
-      }
-    } catch (error) {
-      console.error("Error creating trainer:", error);
-      
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setErrorMessage("Cannot connect to server. Please check if the backend is running.");
-      } else {
-        setErrorMessage("An unexpected error occurred. Please try again.");
-      }
+      setTimeout(() => {
+        navigate("/admin/trainers");
+      }, 2000);
+    } catch (err) {
       setSubmitStatus('error');
+      setErrorMessage(err.message || "Failed to create trainer. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -210,19 +149,43 @@ const CreateTrainer = () => {
                   {trainer.rating && (
                     <div className="flex items-center mt-1 mb-2">
                       <div className="flex text-yellow-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-4 h-4 ${
-                              parseFloat(trainer.rating) >= star ? 'fill-current' : 'fill-gray-300'
-                            }`}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const rating = parseFloat(trainer.rating) || 0;
+                          const filled = rating >= star;
+                          const partiallyFilled = rating > star - 1 && rating < star;
+                          const fillPercentage = partiallyFilled ? ((rating - (star - 1)) * 100) : 0;
+                          
+                          return (
+                            <div key={star} className="relative w-4 h-4">
+                              {/* Background star (empty) */}
+                              <svg
+                                className="absolute inset-0 w-4 h-4 fill-gray-300"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              
+                              {/* Filled star */}
+                              {(filled || partiallyFilled) && (
+                                <div 
+                                  className="absolute inset-0 overflow-hidden"
+                                  style={{ 
+                                    width: filled ? '100%' : `${fillPercentage}%` 
+                                  }}
+                                >
+                                  <svg
+                                    className="w-4 h-4 fill-yellow-400"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <span className="text-gray-600 text-sm ml-2">{trainer.rating}</span>
+                      <span className="text-gray-600 text-sm ml-2">{trainer.rating || '0.0'}</span>
                     </div>
                   )}
                   
@@ -241,22 +204,22 @@ const CreateTrainer = () => {
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>Trainer created successfully! Redirecting to dashboard...</span>
+                <span>Trainer created successfully! Redirecting to manage trainers...</span>
               </div>
             </div>
           )}
 
-          {/* Error Message */}
-          {submitStatus === 'error' && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded transition-opacity duration-500">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <span>{errorMessage || "Failed to create trainer. Please try again."}</span>
-              </div>
-            </div>
-          )}
+              {/* Error Message */}
+              {submitStatus === 'error' && (
+                <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded transition-opacity duration-500">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span>{errorMessage || "Failed to create trainer. Please try again."}</span>
+                  </div>
+                </div>
+              )}
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -271,17 +234,18 @@ const CreateTrainer = () => {
                   value={trainer.trainerName}
                   onChange={(e) => setTrainer({ ...trainer, trainerName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter trainer's full name"
+                  placeholder="Enter trainer's full name (3-200 characters)"
                   required
                   disabled={loading}
                   minLength={3}
+                  maxLength={200}
                 />
               </div>
 
               {/* Rating */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rating <span className="text-gray-500">(0.0-5.0)</span>
+                  Rating <span className="text-gray-500">(0.0-5.0, default: 4.5)</span>
                 </label>
                 <input
                   type="number"
@@ -291,7 +255,7 @@ const CreateTrainer = () => {
                   value={trainer.rating}
                   onChange={(e) => setTrainer({ ...trainer, rating: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g., 4.5"
+                  placeholder="4.5"
                   disabled={loading}
                 />
               </div>
@@ -324,9 +288,11 @@ const CreateTrainer = () => {
                   onChange={(e) => setTrainer({ ...trainer, description: e.target.value })}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Describe the trainer's background, expertise, and teaching experience..."
+                  placeholder="Describe the trainer's background, expertise, and teaching experience (10-1000 characters)..."
                   required
                   disabled={loading}
+                  minLength={10}
+                  maxLength={1000}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   This will be displayed on the trainer's profile and course pages.

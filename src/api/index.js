@@ -1,0 +1,26 @@
+// Main API exports - centralized access to all services
+import authService from './services/authService';
+import userService from './services/userService';
+import adminService from './services/adminService';
+import contactService from './services/contactService';
+import apiClient from './config';
+
+// Export all services
+export {
+  authService,
+  userService,
+  adminService,
+  contactService,
+  apiClient
+};
+
+// Default export with all services
+const api = {
+  auth: authService,
+  user: userService,
+  admin: adminService,
+  contact: contactService,
+  client: apiClient
+};
+
+export default api;

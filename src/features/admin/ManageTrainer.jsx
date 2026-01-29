@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { adminService } from "../../api";
 
 const ManageTrainer = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [updating, setUpdating] = useState(false);
   const [trainer, setTrainer] = useState({
     trainerId: "",
     trainerName: "",
@@ -21,65 +22,32 @@ const ManageTrainer = () => {
     if (submitStatus) {
       const timer = setTimeout(() => {
         setSubmitStatus(null);
-        setErrorMessage("");
       }, 5000);
       return () => clearTimeout(timer);
     }
   }, [submitStatus]);
 
-  // Load trainer data based on ID
+  // Load trainer data based on ID using real API
   useEffect(() => {
     const loadTrainer = async () => {
       try {
-        // Mock data - replace with actual API call
-        const mockTrainers = [
-          { 
-            trainerId: 1, 
-            trainerName: "John Smith", 
-            description: "Expert Java developer with 10+ years of experience in enterprise applications.", 
-            rating: 4.8, 
-            imageUrl: "/image/teachers/author1.jpg"
-          },
-          { 
-            trainerId: 2, 
-            trainerName: "Sarah Johnson", 
-            description: "Full-stack developer specializing in React and Node.js with passion for teaching.", 
-            rating: 4.9, 
-            imageUrl: "/image/teachers/author1.jpg"
-          },
-          { 
-            trainerId: 3, 
-            trainerName: "Mike Wilson", 
-            description: "Senior software architect with expertise in microservices and cloud technologies.", 
-            rating: 4.7, 
-            imageUrl: "/image/teachers/author1.jpg"
-          },
-          { 
-            trainerId: 4, 
-            trainerName: "Emily Davis", 
-            description: "Data science expert with PhD in Computer Science and 8 years industry experience.", 
-            rating: 4.6, 
-            imageUrl: "/image/teachers/author1.jpg"
-          },
-        ];
-
-        const foundTrainer = mockTrainers.find(t => t.trainerId === parseInt(id));
+        const trainerData = await adminService.getTrainerById(id);
+        const trainerInfo = trainerData.data || trainerData;
         
-        if (foundTrainer) {
+        if (trainerInfo) {
           setTrainer({
-            trainerId: foundTrainer.trainerId,
-            trainerName: foundTrainer.trainerName,
-            description: foundTrainer.description,
-            rating: foundTrainer.rating.toString(),
-            imageUrl: foundTrainer.imageUrl,
+            trainerId: trainerInfo.trainerId,
+            trainerName: trainerInfo.trainerName || "",
+            description: trainerInfo.description || "",
+            rating: trainerInfo.rating ? trainerInfo.rating.toString() : "",
+            imageUrl: trainerInfo.imageUrl || "",
           });
         } else {
           setErrorMessage("Trainer not found");
           setSubmitStatus('error');
         }
       } catch (error) {
-        console.error("Error loading trainer:", error);
-        setErrorMessage("Failed to load trainer data");
+        setErrorMessage(error.message || "Failed to load trainer data");
         setSubmitStatus('error');
       } finally {
         setLoading(false);
@@ -93,11 +61,10 @@ const ManageTrainer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setUpdating(true);
     setSubmitStatus(null);
     setErrorMessage("");
+    setUpdating(true);
 
-    // Frontend validation based on backend Trainer entity constraints
     if (!trainer.trainerName.trim()) {
       setErrorMessage("Trainer name is required");
       setSubmitStatus('error');
@@ -149,86 +116,22 @@ const ManageTrainer = () => {
 
     try {
       const payload = {
-        trainerId: trainer.trainerId,
         trainerName: trainer.trainerName.trim(),
         description: trainer.description.trim(),
-        rating: trainer.rating ? parseFloat(trainer.rating) : 0.0,
+        rating: trainer.rating ? parseFloat(trainer.rating) : 4.5,
         imageUrl: trainer.imageUrl.trim() || null,
       };
 
-      const response = await fetch(`http://localhost:8080/api/admin/trainers/${trainer.trainerId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        console.log("Trainer updated successfully");
-        setSubmitStatus('success');
-        
-        // Redirect to manage trainers page after 2 seconds
-        setTimeout(() => {
-          navigate("/admin/trainers");
-        }, 2000);
-      } else {
-        // Handle error responses
-        let errorMessage;
-        const contentType = response.headers.get("content-type");
-        
-        try {
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error;
-          } else {
-            const errorText = await response.text();
-            errorMessage = errorText;
-          }
-        } catch (parseError) {
-          console.error("Error parsing error response:", parseError);
-          errorMessage = null;
-        }
-        
-        // Provide user-friendly error messages
-        let userFriendlyMessage;
-        switch (response.status) {
-          case 400:
-            userFriendlyMessage = errorMessage || "Invalid trainer data. Please check all fields and try again.";
-            break;
-          case 401:
-            userFriendlyMessage = errorMessage || "Authentication required. Please log in again.";
-            break;
-          case 403:
-            userFriendlyMessage = errorMessage || "Access denied. You don't have permission to update trainers.";
-            break;
-          case 404:
-            userFriendlyMessage = errorMessage || "Trainer not found.";
-            break;
-          case 409:
-            userFriendlyMessage = errorMessage || "A trainer with this name already exists.";
-            break;
-          case 500:
-            userFriendlyMessage = errorMessage || "Server error occurred. Please try again later.";
-            break;
-          default:
-            userFriendlyMessage = errorMessage || `Failed to update trainer. Please try again. (Error ${response.status})`;
-        }
-        
-        console.error("Trainer update failed:", userFriendlyMessage);
-        setErrorMessage(userFriendlyMessage);
-        setSubmitStatus('error');
-      }
-    } catch (error) {
-      console.error("Error updating trainer:", error);
+      await adminService.updateTrainer(trainer.trainerId, payload);
       
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setErrorMessage("Cannot connect to server. Please check if the backend is running.");
-      } else {
-        setErrorMessage("An unexpected error occurred. Please try again.");
-      }
+      setSubmitStatus('success');
+      
+      setTimeout(() => {
+        navigate("/admin/trainers");
+      }, 2000);
+    } catch (err) {
       setSubmitStatus('error');
+      setErrorMessage(err.message || "Failed to update trainer. Please try again.");
     } finally {
       setUpdating(false);
     }
@@ -283,19 +186,43 @@ const ManageTrainer = () => {
                   {trainer.rating && (
                     <div className="flex items-center mt-1 mb-2">
                       <div className="flex text-yellow-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-4 h-4 ${
-                              parseFloat(trainer.rating) >= star ? 'fill-current' : 'fill-gray-300'
-                            }`}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const rating = parseFloat(trainer.rating) || 0;
+                          const filled = rating >= star;
+                          const partiallyFilled = rating > star - 1 && rating < star;
+                          const fillPercentage = partiallyFilled ? ((rating - (star - 1)) * 100) : 0;
+                          
+                          return (
+                            <div key={star} className="relative w-4 h-4">
+                              {/* Background star (empty) */}
+                              <svg
+                                className="absolute inset-0 w-4 h-4 fill-gray-300"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              
+                              {/* Filled star */}
+                              {(filled || partiallyFilled) && (
+                                <div 
+                                  className="absolute inset-0 overflow-hidden"
+                                  style={{ 
+                                    width: filled ? '100%' : `${fillPercentage}%` 
+                                  }}
+                                >
+                                  <svg
+                                    className="w-4 h-4 fill-yellow-400"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <span className="text-gray-600 text-sm ml-2">{trainer.rating}</span>
+                      <span className="text-gray-600 text-sm ml-2">{trainer.rating || '0.0'}</span>
                     </div>
                   )}
                   
@@ -401,9 +328,7 @@ const ManageTrainer = () => {
                   required
                   disabled={updating}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  This will be displayed on the trainer's profile and course pages.
-                </p>
+                
               </div>
             </div>
 

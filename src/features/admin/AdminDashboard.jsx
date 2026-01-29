@@ -1,7 +1,63 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { adminService } from "../../api";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState({
+    totalTrainers: 0,
+    totalCourses: 0,
+    totalStudents: 0,
+    totalRevenue: 0,
+    totalEnrollments: 0,
+    recentEnrollmentAgo: '',
+    recentCoursePublishedAgo: '',
+    recentUserRegisteredAgo: ''
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Load dashboard stats
+  useEffect(() => {
+    loadDashboardStats();
+  }, []);
+
+  const loadDashboardStats = async () => {
+    try {
+      // Load main dashboard stats
+      const dashboardData = await adminService.getDashboardStats();
+      const statsData = dashboardData.data || dashboardData;
+      
+      // Load trainers count separately since it's not in dashboard API
+      const trainersData = await adminService.getAllTrainers();
+      const trainersList = trainersData.data || trainersData.trainers || trainersData;
+      const trainersCount = Array.isArray(trainersList) ? trainersList.length : 0;
+      
+      setStats({
+        totalTrainers: trainersCount,
+        totalCourses: statsData.totalCourses || 0,
+        totalStudents: statsData.totalStudents || 0,
+        totalRevenue: statsData.totalRevenue || 0,
+        totalEnrollments: statsData.totalEnrollments || 0,
+        recentEnrollmentAgo: statsData.recentEnrollmentAgo || '',
+        recentCoursePublishedAgo: statsData.recentCoursePublishedAgo || '',
+        recentUserRegisteredAgo: statsData.recentUserRegisteredAgo || ''
+      });
+    } catch (error) {
+      // Keep default values if API fails
+      setStats({
+        totalTrainers: 0,
+        totalCourses: 0,
+        totalStudents: 0,
+        totalRevenue: 0,
+        totalEnrollments: 0,
+        recentEnrollmentAgo: '',
+        recentCoursePublishedAgo: '',
+        recentUserRegisteredAgo: ''
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -14,7 +70,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -24,7 +80,25 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                <p className="text-2xl font-semibold text-gray-900">24</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalCourses.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Trainers</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalTrainers.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -38,7 +112,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-2xl font-semibold text-gray-900">1,234</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalStudents.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -52,7 +128,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Revenue</p>
-                <p className="text-2xl font-semibold text-gray-900">₹45,678</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : `₹${stats.totalRevenue.toLocaleString()}`}
+                </p>
               </div>
             </div>
           </div>
@@ -66,19 +144,23 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Enrollments</p>
-                <p className="text-2xl font-semibold text-gray-900">3,456</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {loading ? '...' : stats.totalEnrollments.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <a href="/admin/courses/create" className="block w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition">
                 + Create New Course
+              </a>
+              <a href="/admin/courses/content" className="block w-full text-left px-4 py-2 bg-cyan-50 text-cyan-700 rounded-lg hover:bg-cyan-100 transition">
+                📹 Manage Course Content
               </a>
               <a href="/admin/trainer/create" className="block w-full text-left px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition">
                 �‍🏫 Add Trainer
@@ -92,27 +174,36 @@ const AdminDashboard = () => {
               <a href="/admin/trainers" className="block w-full text-left px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition">
                 🎓 Manage Trainers
               </a>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">New enrollment</span>
-                <span className="text-gray-500">2 min ago</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Course published</span>
-                <span className="text-gray-500">1 hour ago</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">User registered</span>
-                <span className="text-gray-500">3 hours ago</span>
-              </div>
-            </div>
           </div>
         </div>
+
+        {/* Recent Activity */}
+        {!loading && (stats.recentEnrollmentAgo || stats.recentCoursePublishedAgo || stats.recentUserRegisteredAgo) && (
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+            <div className="space-y-3 text-sm">
+              {stats.recentEnrollmentAgo && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">New enrollment</span>
+                  <span className="text-gray-500">{stats.recentEnrollmentAgo}</span>
+                </div>
+              )}
+              {stats.recentCoursePublishedAgo && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Course published</span>
+                  <span className="text-gray-500">{stats.recentCoursePublishedAgo}</span>
+                </div>
+              )}
+              {stats.recentUserRegisteredAgo && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">User registered</span>
+                  <span className="text-gray-500">{stats.recentUserRegisteredAgo}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
 
       </div>
     </div>
