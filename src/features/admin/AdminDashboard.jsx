@@ -73,12 +73,14 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <a href="/admin/courses/create" className="block w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition">
                 + Create New Course
+              </a>
+              <a href="/admin/courses/content" className="block w-full text-left px-4 py-2 bg-cyan-50 text-cyan-700 rounded-lg hover:bg-cyan-100 transition">
+                📹 Manage Course Content
               </a>
               <a href="/admin/trainer/create" className="block w-full text-left px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition">
                 �‍🏫 Add Trainer
@@ -92,27 +94,29 @@ const AdminDashboard = () => {
               <a href="/admin/trainers" className="block w-full text-left px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition">
                 🎓 Manage Trainers
               </a>
-            </div>
           </div>
+        </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">New enrollment</span>
-                <span className="text-gray-500">2 min ago</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Course published</span>
-                <span className="text-gray-500">1 hour ago</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">User registered</span>
-                <span className="text-gray-500">3 hours ago</span>
-              </div>
+        {/* Recent Activity - Commented out for now */}
+        {/*
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">New enrollment</span>
+              <span className="text-gray-500">2 min ago</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Course published</span>
+              <span className="text-gray-500">1 hour ago</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">User registered</span>
+              <span className="text-gray-500">3 hours ago</span>
             </div>
           </div>
         </div>
+        */}
 
       </div>
     </div>

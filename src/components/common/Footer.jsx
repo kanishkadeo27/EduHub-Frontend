@@ -79,6 +79,7 @@ const Footer = () => {
       </ul>
       <ul>
         <li><Link to="/admin/manage-courses">Manage Courses</Link></li>
+        <li><Link to="/admin/courses/content">Course Content</Link></li>
         <li><Link to="/admin/trainers">Manage Trainers</Link></li>
         <li><Link to="/admin/users">Manage Users</Link></li>
         <li><Link to="/admin/profile">Profile</Link></li>

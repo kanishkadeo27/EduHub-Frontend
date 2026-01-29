@@ -32,6 +32,7 @@ import ManageTrainers from "../features/admin/ManageTrainers";
 import ManageTrainer from "../features/admin/ManageTrainer";
 import Analytics from "../features/admin/Analytics";
 import CreateTrainer from "../features/admin/CreateTrainer";
+import CourseContentManager from "../features/admin/CourseContentManager";
 
 const AppRoutes = () => {
   return (
@@ -90,6 +91,12 @@ const AppRoutes = () => {
         <Route path="/admin/courses/create" element={
           <AdminRoute>
             <CreateCourse />
+          </AdminRoute>
+        } />
+        
+        <Route path="/admin/courses/content" element={
+          <AdminRoute>
+            <CourseContentManager />
           </AdminRoute>
         } />
         
