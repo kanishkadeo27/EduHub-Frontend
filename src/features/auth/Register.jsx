@@ -74,7 +74,7 @@ const Register = () => {
                 <div className="flex justify-center mb-4">
                   <img
                     src="/image/navbar-logo.png"
-                    alt="EduHub Logo"
+                    alt="CourseCraft Logo"
                     className="h-10"
                   />
                 </div>

@@ -70,7 +70,7 @@ const Login = () => {
                 <div className="flex justify-center mb-6">
                   <img
                     src="/image/navbar-logo.png"
-                    alt="EduHub Logo"
+                    alt="CourseCraft Logo"
                     className="h-12"
                   />
                 </div>

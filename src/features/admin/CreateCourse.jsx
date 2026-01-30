@@ -1,45 +1,42 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { adminService } from "../../api";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 const CreateCourse = () => {
   const navigate = useNavigate();
   const [submitStatus, setSubmitStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [trainersLoading, setTrainersLoading] = useState(true);
   const [trainers, setTrainers] = useState([]);
   
   const [course, setCourse] = useState({
-    courseName: "",
+    title: "",
     description: "",
-    backgroundImage: "",
-    rating: "",
-    duration: "",
+    thumbnailUrl: "",
     price: "",
-    courseMode: "Online",
-    studentsEnrolled: "",
-    courseTopic: "",
-    courseSubtopic: "",
-    trainerId: ""
+    level: "BEGINNER",
+    mode: "ONLINE",
+    language: "English",
+    isPublished: true,
+    trainerId: "",
+    topics: []
   });
 
-  // Load trainers for dropdown (using mock data for now)
+  const [topicsInput, setTopicsInput] = useState("");
+
+  // Load trainers from API
   useEffect(() => {
     const loadTrainers = async () => {
       try {
-        setTrainers([
-          { trainerId: 1, trainerName: "John Smith" },
-          { trainerId: 2, trainerName: "Sarah Johnson" },
-          { trainerId: 3, trainerName: "Mike Wilson" },
-          { trainerId: 4, trainerName: "Emily Davis" },
-          { trainerId: 5, trainerName: "Mohd Khushhal" }
-        ]);
+        setTrainersLoading(true);
+        const response = await adminService.getAllTrainers();
+        setTrainers(response.data || []);
       } catch (err) {
-        setTrainers([
-          { trainerId: 1, trainerName: "John Smith" },
-          { trainerId: 2, trainerName: "Sarah Johnson" },
-          { trainerId: 3, trainerName: "Mike Wilson" },
-          { trainerId: 4, trainerName: "Emily Davis" },
-          { trainerId: 5, trainerName: "Mohd Khushhal" }
-        ]);
+        setSubmitStatus('error');
+        setTrainers([]);
+      } finally {
+        setTrainersLoading(false);
       }
     };
     loadTrainers();
@@ -62,13 +59,27 @@ const CreateCourse = () => {
     });
   };
 
+  const handleTopicsChange = (e) => {
+    setTopicsInput(e.target.value);
+    // Convert comma-separated string to array
+    const topicsArray = e.target.value
+      .split(',')
+      .map(topic => topic.trim())
+      .filter(topic => topic.length > 0);
+    
+    setCourse({
+      ...course,
+      topics: topicsArray
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitStatus(null);
     setLoading(true);
 
     // Frontend validation
-    if (!course.courseName.trim()) {
+    if (!course.title.trim()) {
       setSubmitStatus('error');
       setLoading(false);
       return;
@@ -86,51 +97,38 @@ const CreateCourse = () => {
       return;
     }
 
+    if (course.topics.length === 0) {
+      setSubmitStatus('error');
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload = {
-        courseName: course.courseName.trim(),
+        title: course.title.trim(),
         description: course.description.trim(),
-        backgroundImage: course.backgroundImage.trim() || null,
-        rating: course.rating ? parseFloat(course.rating) : 0.0,
-        duration: course.duration.trim(),
+        thumbnailUrl: course.thumbnailUrl.trim() || null,
         price: course.price ? parseFloat(course.price) : 0,
-        courseMode: course.courseMode,
-        studentsEnrolled: course.studentsEnrolled ? parseInt(course.studentsEnrolled) : 0,
-        courseTopic: course.courseTopic.trim(),
-        courseSubtopic: course.courseSubtopic.trim(),
-        trainerId: parseInt(course.trainerId)
+        level: course.level,
+        mode: course.mode,
+        language: course.language,
+        isPublished: course.isPublished,
+        trainerId: parseInt(course.trainerId),
+        topics: course.topics
       };
 
-      console.log("Would create course:", payload);
-
-      // TODO: Replace with actual API call when courseService is implemented
-      // await createCourse(payload);
+      setLoading(false);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSubmitStatus('success');
-      
-      setCourse({
-        courseName: "",
-        description: "",
-        backgroundImage: "",
-        rating: "",
-        duration: "",
-        price: "",
-        courseMode: "Online",
-        studentsEnrolled: "",
-        courseTopic: "",
-        courseSubtopic: "",
-        trainerId: ""
+      // Navigate to course content manager with course data
+      navigate("/admin/courses/content", { 
+        state: { 
+          courseData: payload,
+          isNewCourse: true 
+        } 
       });
-
-      setTimeout(() => {
-        navigate("/admin/manage-courses");
-      }, 2000);
+      
     } catch (err) {
       setSubmitStatus('error');
-    } finally {
       setLoading(false);
     }
   };
@@ -142,7 +140,7 @@ const CreateCourse = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Create New Course</h1>
-          <p className="text-gray-600 mt-2">Add a new course to the platform</p>
+          <p className="text-gray-600 mt-2">Fill in the course details, then add content in the next step</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-8">
@@ -174,18 +172,18 @@ const CreateCourse = () => {
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              {/* Course Name */}
+              {/* Course Title */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Name <span className="text-red-500">*</span>
+                  Course Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="courseName"
-                  value={course.courseName}
+                  name="title"
+                  value={course.title}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter course name"
+                  placeholder="Enter course title"
                   required
                   disabled={loading}
                 />
@@ -208,35 +206,18 @@ const CreateCourse = () => {
                 />
               </div>
 
-              {/* Background Image URL */}
+              {/* Thumbnail URL */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Background Image URL
+                  Thumbnail Image URL
                 </label>
                 <input
                   type="url"
-                  name="backgroundImage"
-                  value={course.backgroundImage}
+                  name="thumbnailUrl"
+                  value={course.thumbnailUrl}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="https://example.com/course-image.jpg"
-                  disabled={loading}
-                />
-              </div>
-
-              {/* Duration */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Duration <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="duration"
-                  value={course.duration}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g., 12 weeks, 3 months"
-                  required
+                  placeholder="https://example.com/course-thumbnail.jpg"
                   disabled={loading}
                 />
               </div>
@@ -244,7 +225,7 @@ const CreateCourse = () => {
               {/* Price */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price
+                  Price (₹) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -255,119 +236,155 @@ const CreateCourse = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="0 for free course"
+                  required
                   disabled={loading}
                 />
               </div>
 
-              {/* Course Mode */}
+              {/* Level */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Course Level <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="level"
+                  value={course.level}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                  disabled={loading}
+                >
+                  <option value="BEGINNER">Beginner</option>
+                  <option value="INTERMEDIATE">Intermediate</option>
+                  <option value="ADVANCED">Advanced</option>
+                </select>
+              </div>
+
+              {/* Mode */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Course Mode <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="courseMode"
-                  value={course.courseMode}
+                  name="mode"
+                  value={course.mode}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                   disabled={loading}
                 >
-                  <option value="Online">Online</option>
-                  <option value="Offline">Offline</option>
-                  <option value="Hybrid">Hybrid</option>
+                  <option value="ONLINE">Online</option>
+                  <option value="OFFLINE">Offline</option>
+                  <option value="HYBRID">Hybrid</option>
                 </select>
               </div>
 
-              {/* Rating */}
+              {/* Language */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Initial Rating <span className="text-gray-500">(0.0-5.0)</span>
+                  Language <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="5"
-                  name="rating"
-                  value={course.rating}
+                <select
+                  name="language"
+                  value={course.language}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g., 4.5"
+                  required
                   disabled={loading}
-                />
+                >
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
+                  <option value="German">German</option>
+                </select>
               </div>
 
-              {/* Course Topic */}
-              <div>
+              {/* Topics */}
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Topic <span className="text-red-500">*</span>
+                  Course Topics <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="courseTopic"
-                  value={course.courseTopic}
-                  onChange={handleChange}
+                  value={topicsInput}
+                  onChange={handleTopicsChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g., Programming, Design, Marketing"
+                  placeholder="Enter topics separated by commas (e.g., JavaScript, React, Node.js)"
                   required
                   disabled={loading}
                 />
-              </div>
-
-              {/* Course Subtopic */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Subtopic <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="courseSubtopic"
-                  value={course.courseSubtopic}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g., Java Development, React, SEO"
-                  required
-                  disabled={loading}
-                />
-              </div>
-
-              {/* Students Enrolled */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Initial Students Count
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  name="studentsEnrolled"
-                  value={course.studentsEnrolled}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="0"
-                  disabled={loading}
-                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Separate multiple topics with commas
+                </p>
+                {course.topics.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {course.topics.map((topic, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded"
+                      >
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Trainer Selection */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Trainer <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="trainerId"
-                  value={course.trainerId}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                  disabled={loading}
-                >
-                  <option value="">Choose a trainer...</option>
-                  {trainers.map((trainer) => (
-                    <option key={trainer.trainerId} value={trainer.trainerId}>
-                      {trainer.trainerName}
-                    </option>
-                  ))}
-                </select>
+                {trainersLoading ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 flex items-center">
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-2"></div>
+                    Loading trainers...
+                  </div>
+                ) : (
+                  <select
+                    name="trainerId"
+                    value={course.trainerId}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Choose a trainer...</option>
+                    {trainers.map((trainer) => (
+                      <option key={trainer.id} value={trainer.id}>
+                        {trainer.name} • {trainer.description.length > 50 
+                          ? trainer.description.substring(0, 50) + '...' 
+                          : trainer.description}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {trainers.length === 0 && !trainersLoading && (
+                  <p className="text-xs text-red-500 mt-1">
+                    No trainers available. Please create trainers first.
+                  </p>
+                )}
+              </div>
+
+              {/* Published Status */}
+              <div className="md:col-span-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isPublished"
+                    checked={course.isPublished}
+                    onChange={(e) => setCourse({...course, isPublished: e.target.checked})}
+                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    disabled={loading}
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Publish course immediately
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Uncheck to save as draft
+                </p>
               </div>
 
             </div>
@@ -391,7 +408,7 @@ const CreateCourse = () => {
                     : 'bg-indigo-500 hover:bg-indigo-600 text-white'
                 }`}
               >
-                {loading ? 'Creating...' : 'Create Course'}
+                {loading ? 'Processing...' : 'Add Course Content'}
               </button>
             </div>
           </form>

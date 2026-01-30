@@ -4,43 +4,56 @@ const Analytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock analytics data (replace with real API call)
   useEffect(() => {
-    setTimeout(() => {
-      setAnalyticsData({
-        overview: {
-          totalUsers: 1234,
-          totalCourses: 24,
-          totalEnrollments: 3456,
-          revenue: 45678,
-          growthRate: 12.5
-        },
-        userGrowth: [
-          { date: "2024-01-01", users: 100 },
-          { date: "2024-01-02", users: 120 },
-          { date: "2024-01-03", users: 150 },
-          { date: "2024-01-04", users: 180 },
-          { date: "2024-01-05", users: 200 },
-          { date: "2024-01-06", users: 230 },
-          { date: "2024-01-07", users: 250 }
-        ],
-        popularCourses: [
-          { name: "React Fundamentals", enrollments: 456, revenue: 12000 },
-          { name: "Node.js Backend", enrollments: 389, revenue: 10500 },
-          { name: "Python Basics", enrollments: 234, revenue: 8900 },
-          { name: "Java Spring Boot", enrollments: 198, revenue: 7800 },
-          { name: "Database Design", enrollments: 167, revenue: 6700 }
-        ],
-        recentActivity: [
-          { action: "New user registration", user: "john@example.com", time: "2 minutes ago" },
-          { action: "Course enrollment", user: "jane@example.com", course: "React Fundamentals", time: "5 minutes ago" },
-          { action: "Course completion", user: "bob@example.com", course: "Python Basics", time: "15 minutes ago" },
-          { action: "Payment received", user: "alice@example.com", amount: "₹2,999", time: "30 minutes ago" },
-          { action: "New course published", course: "Advanced JavaScript", time: "1 hour ago" }
-        ]
-      });
-      setLoading(false);
-    }, 1000);
+    // Simulate API call - replace with real analytics API
+    const loadAnalytics = async () => {
+      try {
+        // TODO: Replace with actual API call
+        // const response = await analyticsService.getAnalytics();
+        // setAnalyticsData(response.data);
+        
+        // Mock data for demonstration
+        setTimeout(() => {
+          setAnalyticsData({
+            overview: {
+              totalUsers: 1234,
+              totalCourses: 24,
+              totalEnrollments: 3456,
+              revenue: 45678,
+              growthRate: 12.5
+            },
+            userGrowth: [
+              { date: "2024-01-01", users: 100 },
+              { date: "2024-01-02", users: 120 },
+              { date: "2024-01-03", users: 150 },
+              { date: "2024-01-04", users: 180 },
+              { date: "2024-01-05", users: 200 },
+              { date: "2024-01-06", users: 230 },
+              { date: "2024-01-07", users: 250 }
+            ],
+            popularCourses: [
+              { name: "React Fundamentals", enrollments: 456, revenue: 12000 },
+              { name: "Node.js Backend", enrollments: 389, revenue: 10500 },
+              { name: "Python Basics", enrollments: 234, revenue: 8900 },
+              { name: "Java Spring Boot", enrollments: 198, revenue: 7800 },
+              { name: "Database Design", enrollments: 167, revenue: 6700 }
+            ],
+            recentActivity: [
+              { action: "New user registration", user: "john@example.com", time: "2 minutes ago" },
+              { action: "Course enrollment", user: "jane@example.com", course: "React Fundamentals", time: "5 minutes ago" },
+              { action: "Course completion", user: "bob@example.com", course: "Python Basics", time: "15 minutes ago" },
+              { action: "Payment received", user: "alice@example.com", amount: "₹2,999", time: "30 minutes ago" },
+              { action: "New course published", course: "Advanced JavaScript", time: "1 hour ago" }
+            ]
+          });
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
+        setLoading(false);
+      }
+    };
+
+    loadAnalytics();
   }, []);
 
   if (loading) {

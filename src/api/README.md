@@ -283,12 +283,18 @@ Common error scenarios:
 Enable request/response logging by modifying the interceptors in `config.js`:
 ```javascript
 apiClient.interceptors.request.use((config) => {
-  console.log('Request:', config);
+  // Log requests in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Request:', config);
+  }
   return config;
 });
 
 apiClient.interceptors.response.use((response) => {
-  console.log('Response:', response);
+  // Log responses in development only  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Response:', response);
+  }
   return response;
 });
 ```

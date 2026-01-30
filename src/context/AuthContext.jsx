@@ -15,13 +15,31 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing token on app load
+  // Token expiration check utility
+  const isTokenExpired = (token) => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  };
+
+  // Load user from localStorage on app start with token validation
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
     
     if (token && userData) {
       try {
+        // Check if token is expired
+        if (isTokenExpired(token)) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setLoading(false);
+          return;
+        }
+
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
       } catch (error) {
@@ -31,6 +49,27 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
   }, []);
+
+  // Periodic token expiration check
+  useEffect(() => {
+    if (!user) return;
+
+    const checkTokenExpiration = () => {
+      const token = localStorage.getItem("token");
+      if (token && isTokenExpired(token)) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+        // Session expired - redirect to login
+        window.location.href = '/login';
+      }
+    };
+
+    // Check every 5 minutes
+    const interval = setInterval(checkTokenExpiration, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Real login function using backend API
   const login = async (email, password) => {
@@ -53,6 +92,12 @@ export const AuthProvider = ({ children }) => {
       // Save to localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(userData));
+      
+      // Clear course progress if user is not a regular user (admin/guest)
+      const userRole = userData.role?.toLowerCase();
+      if (userRole !== 'user' && !userRole?.includes('user')) {
+        localStorage.removeItem("courseProgress");
+      }
       
       setUser(userData);
       return data;
@@ -136,6 +181,8 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // Clear course progress data on logout
+    localStorage.removeItem("courseProgress");
     setUser(null);
   };
 
