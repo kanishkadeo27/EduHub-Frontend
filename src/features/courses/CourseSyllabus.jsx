@@ -50,24 +50,46 @@ const CourseSyllabus = () => {
           const response = await courseService.getCourseById(id);
           const data = response.data; // Extract the actual course data from the response
           
-          const mappedCourse = {
-            id: data.id,
-            courseName: data.title,
-            courseDescription: data.description,
-            trainer: data.trainer.name,
-            trainerImage: data.trainer.imageUrl,
-            price: data.price,
-            level: data.level,
-            mode: data.mode,
-            language: data.language,
-            topics: data.topics,
-            lessons: data.syllabus.lessons,
-            totalLessons: data.syllabus.lessons.length,
-            enrolled: data.enrolled
-          };
-          
-          setCourse(mappedCourse);
-          setError(null);
+          // Check if syllabus exists
+          if (!data.syllabus || !data.syllabus.lessons) {
+            const mappedCourse = {
+              id: data.id,
+              courseName: data.title,
+              courseDescription: data.description,
+              trainer: data.trainer.name,
+              trainerImage: data.trainer.imageUrl,
+              price: data.price,
+              level: data.level,
+              mode: data.mode,
+              language: data.language,
+              topics: data.topics,
+              lessons: [],
+              totalLessons: 0,
+              enrolled: data.enrolled
+            };
+            
+            setCourse(mappedCourse);
+            setError(null);
+          } else {
+            const mappedCourse = {
+              id: data.id,
+              courseName: data.title,
+              courseDescription: data.description,
+              trainer: data.trainer.name,
+              trainerImage: data.trainer.imageUrl,
+              price: data.price,
+              level: data.level,
+              mode: data.mode,
+              language: data.language,
+              topics: data.topics,
+              lessons: data.syllabus.lessons,
+              totalLessons: data.syllabus.lessons.length,
+              enrolled: data.enrolled
+            };
+            
+            setCourse(mappedCourse);
+            setError(null);
+          }
         }
       } catch (err) {
         setError(err.message);
@@ -200,9 +222,6 @@ const CourseSyllabus = () => {
                             src={course.trainerImage}
                             alt={course.trainer}
                             className="w-8 h-8 rounded-full mr-3 object-cover"
-                            onError={(e) => {
-                              e.target.src = "/image/teachers/author1.jpg";
-                            }}
                           />
                         )}
                         <div>
@@ -263,7 +282,10 @@ const CourseSyllabus = () => {
                                 </div>
                               </div>
                               <p className="text-xs text-gray-500 mt-1">
-                                Detailed content available after enrollment
+                                {course.enrolled 
+                                  ? "Detailed content available in classroom" 
+                                  : "Detailed content available after enrollment"
+                                }
                               </p>
                             </div>
                           )}
@@ -292,20 +314,45 @@ const CourseSyllabus = () => {
             </div>
           )}
 
-          {/* Enrollment Call-to-Action for Non-Enrolled Users */}
-          {user && userRole === "user" && !course.enrolled && (
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-sm p-8 text-white text-center mt-8">
-              <h3 className="text-2xl font-bold mb-4">Ready to Start Learning?</h3>
-              <p className="text-indigo-100 mb-6">
-                Enroll now to access all course materials, videos, and interactive content.
-              </p>
-              <button
-                onClick={() => navigate(`/courses/${id}`)}
-                className="bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
-              >
-                Enroll in Course
-              </button>
-            </div>
+          {/* Call-to-Action for Users */}
+          {user && userRole === "user" && (
+            <>
+              {!course.enrolled ? (
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-sm p-8 text-white text-center mt-8">
+                  <h3 className="text-2xl font-bold mb-4">Ready to Start Learning?</h3>
+                  <p className="text-indigo-100 mb-6">
+                    Enroll now to access all course materials, videos, and interactive content.
+                  </p>
+                  <button
+                    onClick={() => navigate(`/courses/${id}`)}
+                    className="bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
+                  >
+                    Enroll in Course
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl shadow-sm p-8 text-white text-center mt-8">
+                  <h3 className="text-2xl font-bold mb-4">Ready to Continue Learning?</h3>
+                  <p className="text-green-100 mb-6">
+                    Access your classroom to watch videos, download materials, and track your progress.
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <button
+                      onClick={() => navigate(`/courses/${id}/classroom`)}
+                      className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
+                    >
+                      Go to Classroom
+                    </button>
+                    <button
+                      onClick={() => navigate(`/courses/${id}`)}
+                      className="bg-green-600 border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200"
+                    >
+                      Course Details
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Login Call-to-Action for Guest Users */}

@@ -26,13 +26,13 @@ const CourseDetails = () => {
           courseName: data.title,
           description: data.description,
           rating: data.trainer.rating,
-          duration: data.syllabus?.lessons?.filter((lesson, index, self) => 
+          duration: data.syllabus && data.syllabus.lessons ? data.syllabus.lessons.filter((lesson, index, self) => 
             index === self.findIndex(l => l.lessonNo === lesson.lessonNo)
-          ).length,
+          ).length : 0,
           price: data.price,
           enrolled: data.enrolled,
           courseMode: data.mode,
-          studentsEnrolled: 0,
+          studentsEnrolled: data.enrollments,
           courseTopic: data.topics[0],
           courseSubtopic: data.topics[1],
           level: data.level,
@@ -40,13 +40,13 @@ const CourseDetails = () => {
           topics: data.topics,
           category: data.topics[0],
           subcategory: data.topics[1],
-          totalVideos: data.syllabus?.lessons?.filter((lesson, index, self) => 
+          totalVideos: data.syllabus && data.syllabus.lessons ? data.syllabus.lessons.filter((lesson, index, self) => 
             index === self.findIndex(l => l.lessonNo === lesson.lessonNo)
           ).reduce((total, lesson) => 
-            total + (lesson.materials?.filter(m => m.type === 'VIDEO').length || 0), 0),
-          totalLessons: data.syllabus?.lessons?.filter((lesson, index, self) => 
+            total + (lesson.materials.filter(m => m.type === 'VIDEO').length), 0) : 0,
+          totalLessons: data.syllabus && data.syllabus.lessons ? data.syllabus.lessons.filter((lesson, index, self) => 
             index === self.findIndex(l => l.lessonNo === lesson.lessonNo)
-          ).length,
+          ).length : 0,
           syllabus: data.syllabus,
           trainer: {
             trainerId: data.trainer.id,

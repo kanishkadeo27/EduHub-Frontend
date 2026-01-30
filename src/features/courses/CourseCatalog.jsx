@@ -37,31 +37,57 @@ const CourseCatalog = () => {
         }
         
         // Map the API response to match our CourseCard component expectations
-        const mappedCourses = coursesData.map(course => ({
-          id: course.id,
-          courseName: course.title,
-          courseDescription: course.description,
-          trainer: course.trainer.name,
-          trainerImage: course.trainer.imageUrl,
-          rating: course.trainer.rating,
-          price: course.price,
-          duration: course.syllabus?.lessons?.filter((lesson, index, self) => 
-            index === self.findIndex(l => l.lessonNo === lesson.lessonNo)
-          ).length,
-          imageId: course.thumbnailUrl,
-          isEnrolled: course.enrolled,
-          totalVideos: course.syllabus?.lessons?.filter((lesson, index, self) => 
-            index === self.findIndex(l => l.lessonNo === lesson.lessonNo)
-          ).reduce((total, lesson) => 
-            total + (lesson.materials?.filter(m => m.type === 'VIDEO').length || 0), 0),
-          level: course.level,
-          mode: course.mode,
-          language: course.language,
-          topics: course.topics,
-          category: course.topics?.[0],
-          subcategory: course.topics?.[1],
-          currentEnrollment: 0
-        }));
+        const mappedCourses = coursesData.map(course => {
+          // Skip courses without syllabus data
+          if (!course.syllabus || !course.syllabus.lessons) {
+            return {
+              id: course.id,
+              courseName: course.title,
+              courseDescription: course.description,
+              trainer: course.trainer.name,
+              trainerImage: course.trainer.imageUrl,
+              rating: course.trainer.rating,
+              price: course.price,
+              duration: 0,
+              imageId: course.thumbnailUrl,
+              isEnrolled: course.enrolled,
+              totalVideos: 0,
+              level: course.level,
+              mode: course.mode,
+              language: course.language,
+              topics: course.topics,
+              category: course.topics[0],
+              subcategory: course.topics[1],
+              currentEnrollment: course.enrollments
+            };
+          }
+
+          return {
+            id: course.id,
+            courseName: course.title,
+            courseDescription: course.description,
+            trainer: course.trainer.name,
+            trainerImage: course.trainer.imageUrl,
+            rating: course.trainer.rating,
+            price: course.price,
+            duration: course.syllabus.lessons.filter((lesson, index, self) => 
+              index === self.findIndex(l => l.lessonNo === lesson.lessonNo)
+            ).length,
+            imageId: course.thumbnailUrl,
+            isEnrolled: course.enrolled,
+            totalVideos: course.syllabus.lessons.filter((lesson, index, self) => 
+              index === self.findIndex(l => l.lessonNo === lesson.lessonNo)
+            ).reduce((total, lesson) => 
+              total + (lesson.materials.filter(m => m.type === 'VIDEO').length), 0),
+            level: course.level,
+            mode: course.mode,
+            language: course.language,
+            topics: course.topics,
+            category: course.topics[0],
+            subcategory: course.topics[1],
+            currentEnrollment: course.enrollments
+          };
+        });
 
         setCourses(mappedCourses);
         setError(null);

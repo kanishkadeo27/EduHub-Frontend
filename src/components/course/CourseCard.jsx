@@ -141,19 +141,23 @@ const CourseCard = ({ course }) => {
         </div>
 
         {/* Metadata Row - Rating, Duration, and Enrollment */}
-        <div className="flex items-center justify-between mb-6">
-          <StarRating rating={rating} />
-          <div className="flex items-center gap-3 text-gray-600 text-sm">
-            <div className="flex items-center gap-1">
-              <ClockIcon />
-              <span className="font-medium">{duration} Lessons</span>
-            </div>
-            {currentEnrollment > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <StarRating rating={rating} />
+            <div className="flex items-center gap-4 text-gray-600 text-sm">
               <div className="flex items-center gap-1">
-                <UserIcon />
-                <span className="font-medium">{currentEnrollment}</span>
+                <ClockIcon />
+                <span className="font-medium">{duration}</span>
+                <span className="text-xs">Lessons</span>
               </div>
-            )}
+              {currentEnrollment > 0 && (
+                <div className="flex items-center gap-1">
+                  <UserIcon />
+                  <span className="font-medium">{currentEnrollment}</span>
+                  <span className="text-xs">enrolled</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
