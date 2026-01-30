@@ -60,8 +60,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
-        // Optionally show a message to user
-        alert("Your session has expired. Please log in again.");
+        // Session expired - redirect to login
         window.location.href = '/login';
       }
     };

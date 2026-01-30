@@ -84,7 +84,6 @@ const Classroom = () => {
         
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch course content:', err);
         setError(err.message);
       } finally {
         setLoading(false);

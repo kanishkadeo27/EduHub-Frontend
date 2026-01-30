@@ -313,7 +313,7 @@ const CourseDetails = () => {
                           errorMessage = error.message;
                         }
                         
-                        alert(errorMessage);
+                        setError(errorMessage);
                         setLoading(false);
                       }
                     }}

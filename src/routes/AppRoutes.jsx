@@ -33,6 +33,7 @@ import ManageTrainer from "../features/admin/ManageTrainer";
 import Analytics from "../features/admin/Analytics";
 import CreateTrainer from "../features/admin/CreateTrainer";
 import CourseContentManager from "../features/admin/CourseContentManager";
+import AdminManageCourses from "../features/admin/AdminManageCourses";
 
 const AppRoutes = () => {
   return (
@@ -126,7 +127,7 @@ const AppRoutes = () => {
         
         <Route path="/admin/manage-courses" element={
           <AdminRoute>
-            <CourseCatalog />
+            <AdminManageCourses />
           </AdminRoute>
         } />
         
@@ -160,6 +161,13 @@ const AppRoutes = () => {
           <StudentRoute>
             <MyCourses />
           </StudentRoute>
+        } />
+
+        {/* Admin legacy redirects */}
+        <Route path="/admin/create-course" element={
+          <AdminRoute>
+            <CreateCourse />
+          </AdminRoute>
         } />
 
       </Route>

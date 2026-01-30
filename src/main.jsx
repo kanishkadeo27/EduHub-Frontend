@@ -16,9 +16,6 @@ import "./assets/styles/course/style.css";
 import "./assets/styles/course/responsive.css";
 import "./assets/styles/course/color1.css";
 
-// Footer styles
-import "./assets/styles/common/footer_style.css";
-
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <App />

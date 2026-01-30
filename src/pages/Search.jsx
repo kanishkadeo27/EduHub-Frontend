@@ -125,7 +125,7 @@ const Search = () => {
       setHasSearched(true);
       
       // Show user-friendly error message
-      alert(error.message);
+      setError(error.message || 'Search failed. Please try again.');
     } finally {
       setIsSearching(false);
     }

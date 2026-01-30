@@ -15,6 +15,7 @@ const AdminDashboard = () => {
     recentUserRegisteredAgo: ''
   });
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState(null);
 
   // Load dashboard stats
   useEffect(() => {
@@ -43,17 +44,7 @@ const AdminDashboard = () => {
         recentUserRegisteredAgo: statsData.recentUserRegisteredAgo || ''
       });
     } catch (error) {
-      // Keep default values if API fails
-      setStats({
-        totalTrainers: 0,
-        totalCourses: 0,
-        totalStudents: 0,
-        totalRevenue: 0,
-        totalEnrollments: 0,
-        recentEnrollmentAgo: '',
-        recentCoursePublishedAgo: '',
-        recentUserRegisteredAgo: ''
-      });
+      setMessage({ type: 'error', text: `Failed to load dashboard data: ${error.message}` });
     } finally {
       setLoading(false);
     }
@@ -68,6 +59,18 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">Welcome back, {user?.name}</p>
         </div>
+
+        {/* Error Message */}
+        {message && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">{message.text}</span>
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -159,11 +162,8 @@ const AdminDashboard = () => {
               <a href="/admin/courses/create" className="block w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition">
                 + Create New Course
               </a>
-              <a href="/admin/courses/content" className="block w-full text-left px-4 py-2 bg-cyan-50 text-cyan-700 rounded-lg hover:bg-cyan-100 transition">
-                📹 Manage Course Content
-              </a>
               <a href="/admin/trainer/create" className="block w-full text-left px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition">
-                �‍🏫 Add Trainer
+                👨‍🏫 Add Trainer
               </a>
               <a href="/admin/manage-courses" className="block w-full text-left px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition">
                 📚 Manage Courses

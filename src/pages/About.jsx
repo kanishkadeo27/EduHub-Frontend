@@ -19,7 +19,7 @@ const About = () => {
           <p className="text-xl text-gray-600 text-justify">
             Hello! Welcome to{" "}
             <span className="font-semibold text-gray-900">
-              EduHub
+              CourseCraft
             </span>
             . We're really happy to see you here.
           </p>
@@ -33,7 +33,7 @@ const About = () => {
           <p className="text-lg text-gray-500 leading-relaxed text-justify">
             At{" "}
             <span className="font-semibold text-gray-900">
-              EduHub
+              CourseCraft
             </span>
             , we understand the value of seeking counsel and guidance. Our team of
             experienced mentors is dedicated to supporting you throughout your

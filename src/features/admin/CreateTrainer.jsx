@@ -15,7 +15,6 @@ const CreateTrainer = () => {
   const [submitStatus, setSubmitStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Debug: Check user authentication on component mount
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const token = localStorage.getItem('token');

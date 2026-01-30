@@ -107,8 +107,8 @@ const Home = () => {
         <div className="mb-8">
           <div className="relative mx-auto w-96 h-56 overflow-hidden rounded-xl shadow-2xl border-4 border-white">
             <img
-              src="/image/HomePage/founders_image.jpeg"
-              alt="EduHub Founders"
+              src="/image/founders_image.jpeg"
+              alt="CourseCraft Founders"
               className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
               style={{ objectPosition: '50% 25%' }}
             />
@@ -124,7 +124,7 @@ const Home = () => {
             "Our mission is to bridge the gap between traditional education and modern technology, 
             creating an inclusive learning environment where every student can thrive and achieve their dreams."
           </p>
-          <p className="text-indigo-600 font-semibold mt-4 text-lg">- EduHub Founding Team</p>
+          <p className="text-indigo-600 font-semibold mt-4 text-lg">- CourseCraft Founding Team</p>
         </div>
       </div>
 

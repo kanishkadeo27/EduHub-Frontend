@@ -1,4 +1,5 @@
 import apiClient from '../config';
+import apiCache from '../../utils/cache';
 
 const adminService = {
   // Update admin profile
@@ -27,19 +28,43 @@ const adminService = {
 
   // Get all trainers
   getAllTrainers: async () => {
-    const response = await apiClient.get('/admin/trainers');
-    return response.data;
+    const cacheKey = 'all_trainers';
+    
+    // Check cache first
+    const cached = apiCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await apiClient.get('/admin/trainers');
+      
+      // Cache the response for 5 minutes
+      apiCache.set(cacheKey, response, 5 * 60 * 1000);
+      
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
 
   // Create trainer
   createTrainer: async (trainerData) => {
     const response = await apiClient.post('/admin/trainers', trainerData);
+    
+    // Clear trainers cache after creation
+    apiCache.delete('all_trainers');
+    
     return response.data;
   },
 
   // Delete trainer
   deleteTrainer: async (trainerId) => {
     const response = await apiClient.delete(`/admin/trainers/${trainerId}`);
+    
+    // Clear trainers cache after deletion
+    apiCache.delete('all_trainers');
+    
     return response.data;
   },
 
@@ -52,6 +77,10 @@ const adminService = {
   // Update trainer
   updateTrainer: async (trainerId, trainerData) => {
     const response = await apiClient.put(`/admin/trainers/${trainerId}`, trainerData);
+    
+    // Clear trainers cache after update
+    apiCache.delete('all_trainers');
+    
     return response.data;
   },
 
