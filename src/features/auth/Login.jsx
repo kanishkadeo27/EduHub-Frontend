@@ -13,9 +13,43 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Get redirect path from location state
   const from = location.state?.from?.pathname || "/";
+
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) return "Email is required";
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    return "";
+  };
+
+  // Real-time field validation
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    setFieldErrors(prev => ({
+      ...prev,
+      email: validateEmail(value)
+    }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    setFieldErrors(prev => ({
+      ...prev,
+      password: validatePassword(value)
+    }));
+  };
 
   /**
    * HANDLE LOGIN SUBMIT
@@ -23,9 +57,17 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ Frontend validation
-    if (!email || !password) {
-      setError("Email and password are required");
+    // ✅ Comprehensive frontend validation
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+
+    setFieldErrors({
+      email: emailError,
+      password: passwordError
+    });
+
+    if (emailError || passwordError) {
+      setError("Please fix the errors above");
       return;
     }
 
@@ -33,7 +75,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       
       // Redirect to intended page or home
       navigate(from, { replace: true });
@@ -76,7 +118,7 @@ const Login = () => {
                 </div>
 
                 <h3 className="text-center text-2xl font-medium mb-6">
-                  Students | Login
+                  Login
                 </h3>
 
                 {/* ERROR MESSAGE */}
@@ -89,31 +131,47 @@ const Login = () => {
                 {/* EMAIL */}
                 <div className="mb-5">
                   <label className="block text-gray-800 text-sm mb-1">
-                    Email
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
-                    className="w-full border rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className={`w-full border rounded-md px-4 py-2 focus:outline-none focus:ring-2 transition-colors ${
+                      fieldErrors.email 
+                        ? 'border-red-500 focus:ring-red-400' 
+                        : 'border-gray-300 focus:ring-indigo-400'
+                    }`}
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="off"
+                    onChange={handleEmailChange}
+                    autoComplete="email"
+                    required
                   />
+                  {fieldErrors.email && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+                  )}
                 </div>
 
                 {/* PASSWORD */}
                 <div className="mb-5">
                   <label className="block text-gray-800 text-sm mb-1">
-                    Password
+                    Password <span className="text-red-500">*</span>
                   </label>
                   <input
                     type={showPassword ? "text" : "password"}
-                    className="w-full border rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className={`w-full border rounded-md px-4 py-2 focus:outline-none focus:ring-2 transition-colors ${
+                      fieldErrors.password 
+                        ? 'border-red-500 focus:ring-red-400' 
+                        : 'border-gray-300 focus:ring-indigo-400'
+                    }`}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="off"
+                    onChange={handlePasswordChange}
+                    autoComplete="current-password"
+                    required
                   />
+                  {fieldErrors.password && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
+                  )}
                 </div>
 
                 {/* SHOW PASSWORD */}
@@ -132,7 +190,7 @@ const Login = () => {
                 {/* LOGIN BUTTON */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || fieldErrors.email || fieldErrors.password}
                   className="w-full bg-indigo-500 text-white py-3 rounded-md font-medium hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Logging in..." : "LOGIN"}

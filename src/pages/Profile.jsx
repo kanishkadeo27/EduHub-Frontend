@@ -15,12 +15,32 @@ const Profile = () => {
   const [submitStatus, setSubmitStatus] = useState(null);
   const [isSuccessFading, setIsSuccessFading] = useState(false);
   const [isErrorFading, setIsErrorFading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const userRole = getUserRole();
 
   // Use appropriate API service based on user role
   const apiService = userRole === "admin" ? adminService.updateProfile : userService.updateProfile;
   const { loading: updating, error, execute: updateProfile } = useApi(apiService);
+
+  // Validation functions
+  const validateName = (name) => {
+    if (!name.trim()) return "Name is required";
+    if (name.trim().length < 3) return "Name must be at least 3 characters";
+    if (name.trim().length > 200) return "Name must be less than 200 characters";
+    if (!/^[a-zA-Z]+$/.test(name.trim())) return "Name can only contain alphabets (no spaces, numbers, or special characters)";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    if (password.length < 8) return "Password must be at least 8 characters";
+    if (!/(?=.*[a-z])/.test(password)) return "Password must contain at least one lowercase letter";
+    if (!/(?=.*[A-Z])/.test(password)) return "Password must contain at least one uppercase letter";
+    if (!/(?=.*\d)/.test(password)) return "Password must contain at least one number";
+    if (!/(?=.*[@$!%*?&])/.test(password)) return "Password must contain at least one special character (@$!%*?&)";
+    return "";
+  };
 
   // Load user data from AuthContext
   useEffect(() => {
@@ -63,6 +83,25 @@ const Profile = () => {
     }
   }, [error]);
 
+  // Real-time field validation
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    setUser({ ...user, name: value });
+    setFieldErrors(prev => ({
+      ...prev,
+      name: validateName(value)
+    }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setUser({ ...user, password: value });
+    setFieldErrors(prev => ({
+      ...prev,
+      password: validatePassword(value)
+    }));
+  };
+
   if (loading) {
     return (
       <section className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -75,18 +114,16 @@ const Profile = () => {
     e.preventDefault();
     setSubmitStatus(null);
 
-    // Frontend validation based on backend constraints
-    if (user.name.trim().length < 3) {
-      setSubmitStatus('error');
-      return;
-    }
+    // Comprehensive frontend validation
+    const nameError = validateName(user.name);
+    const passwordError = validatePassword(user.password);
 
-    if (user.name.trim().length > 200) {
-      setSubmitStatus('error');
-      return;
-    }
+    setFieldErrors({
+      name: nameError,
+      password: passwordError
+    });
 
-    if (user.password.length < 6) {
+    if (nameError || passwordError) {
       setSubmitStatus('error');
       return;
     }
@@ -206,19 +243,22 @@ const Profile = () => {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900 transition-all duration-200 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-900 transition-all duration-200 hover:border-gray-300 focus:ring-4 focus:ring-blue-100 ${
+                    fieldErrors.name 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                      : 'border-gray-200 focus:border-blue-500'
+                  }`}
                   value={user.name}
-                  onChange={(e) =>
-                    setUser({ ...user, name: e.target.value })
-                  }
+                  onChange={handleNameChange}
                   required
                   disabled={updating}
-                  minLength={3}
-                  maxLength={200}
-                  placeholder="Enter your full name"
+                  placeholder="Enter your name (alphabets only)"
                 />
+                {fieldErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                )}
                 <div className="flex justify-between">
-                  <p className="text-xs text-gray-500">3–200 characters</p>
+                  <p className="text-xs text-gray-500">3–200 characters, alphabets only</p>
                   <p className="text-xs text-gray-400">{user.name.length}/200</p>
                 </div>
               </div>
@@ -230,20 +270,27 @@ const Profile = () => {
                 </label>
                 <input
                   type="password"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900 transition-all duration-200 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-900 transition-all duration-200 hover:border-gray-300 focus:ring-4 focus:ring-blue-100 ${
+                    fieldErrors.password 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-100' 
+                      : 'border-gray-200 focus:border-blue-500'
+                  }`}
                   value={user.password}
-                  onChange={(e) =>
-                    setUser({ ...user, password: e.target.value })
-                  }
+                  onChange={handlePasswordChange}
                   placeholder="Enter your password"
                   disabled={updating}
                   required
-                  minLength={6}
                 />
+                {fieldErrors.password && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
+                )}
+                <div className="mt-1 text-xs text-gray-500">
+                  Password must contain: 8+ characters, uppercase, lowercase, number, special character (@$!%*?&)
+                </div>
                 <div className="flex justify-between">
-                  <p className="text-xs text-gray-500">Minimum 6 characters</p>
+                  <p className="text-xs text-gray-500">Password requirements above</p>
                   <p className="text-xs text-gray-400">
-                    {user.password.length >= 6 ? 'Good' : 'Too short'}
+                    {user.password.length >= 8 ? 'Good length' : 'Too short'}
                   </p>
                 </div>
               </div>
@@ -252,9 +299,9 @@ const Profile = () => {
               <div className="pt-6">
                 <button
                   type="submit"
-                  disabled={updating}
+                  disabled={updating || Object.values(fieldErrors).some(error => error)}
                   className={`w-full py-4 px-8 rounded-xl font-semibold text-lg transition-all duration-200 ${
-                    updating 
+                    updating || Object.values(fieldErrors).some(error => error)
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                       : 'bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-700 focus:ring-4 focus:ring-blue-200 transform hover:scale-[1.02] active:scale-[0.98]'
                   }`}

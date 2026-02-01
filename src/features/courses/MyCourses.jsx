@@ -39,7 +39,8 @@ const MyCourses = () => {
               level: course.level,
               mode: course.mode,
               language: course.language,
-              topics: course.topics
+              topics: course.topics,
+              serverProgress: course.progress || 0 // Use server progress
             };
           }
 
@@ -63,7 +64,8 @@ const MyCourses = () => {
             level: course.level,
             mode: course.mode,
             language: course.language,
-            topics: course.topics
+            topics: course.topics,
+            serverProgress: course.progress // Keep null if server has null, don't default to 0
           };
         });
 
@@ -157,7 +159,7 @@ const MyCourses = () => {
               </div>
               <div>
                 <h3 className="text-3xl font-bold text-green-600">
-                  {enrolledCourses.filter(course => getCourseProgress(course.id, course.totalVideos) === 100).length}
+                  {enrolledCourses.filter(course => (course.serverProgress !== undefined ? course.serverProgress : getCourseProgress(course.id, course.totalVideos)) === 100).length}
                 </h3>
                 <p className="text-gray-600 mt-2">Completed Courses</p>
               </div>
@@ -165,7 +167,7 @@ const MyCourses = () => {
                 <h3 className="text-3xl font-bold text-blue-600">
                   {Math.round(
                     enrolledCourses.reduce((acc, course) => 
-                      acc + getCourseProgress(course.id, course.totalVideos), 0
+                      acc + (course.serverProgress !== undefined ? course.serverProgress : getCourseProgress(course.id, course.totalVideos)), 0
                     ) / enrolledCourses.length
                   )}%
                 </h3>

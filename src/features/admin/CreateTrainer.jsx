@@ -14,6 +14,67 @@ const CreateTrainer = () => {
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // Validation functions
+  const validateName = (name) => {
+    if (!name.trim()) return "Trainer name is required";
+    if (name.trim().length < 3) return "Name must be at least 3 characters";
+    if (name.trim().length > 100) return "Name must be less than 100 characters";
+    if (!/^[a-zA-Z]+$/.test(name.trim())) return "Name can only contain alphabets (no spaces, numbers, or special characters)";
+    return "";
+  };
+
+  const validateDescription = (description) => {
+    if (!description.trim()) return "Description is required";
+    if (description.trim().length < 10) return "Description must be at least 10 characters";
+    if (description.trim().length > 1000) return "Description must be less than 1000 characters";
+    return "";
+  };
+
+  const validateRating = (rating) => {
+    if (!rating) return "Rating is required";
+    const ratingNum = parseFloat(rating);
+    if (isNaN(ratingNum)) return "Rating must be a valid number";
+    if (ratingNum < 1 || ratingNum > 5) return "Rating must be between 1 and 5";
+    return "";
+  };
+
+  const validateImageUrl = (imageUrl) => {
+    if (!imageUrl.trim()) return "Image URL is required";
+    try {
+      new URL(imageUrl);
+      if (!imageUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+        return "Image URL must end with a valid image extension (jpg, jpeg, png, gif, webp)";
+      }
+    } catch {
+      return "Please enter a valid URL";
+    }
+    return "";
+  };
+
+  // Real-time field validation
+  const handleFieldChange = (field, value) => {
+    setTrainer(prev => ({ ...prev, [field]: value }));
+    
+    let error = "";
+    switch (field) {
+      case 'name':
+        error = validateName(value);
+        break;
+      case 'description':
+        error = validateDescription(value);
+        break;
+      case 'rating':
+        error = validateRating(value);
+        break;
+      case 'imageUrl':
+        error = validateImageUrl(value);
+        break;
+    }
+    
+    setFieldErrors(prev => ({ ...prev, [field]: error }));
+  };
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -38,109 +99,48 @@ const CreateTrainer = () => {
     e.preventDefault();
     setSubmitStatus(null);
     setErrorMessage("");
+
+    // Comprehensive validation
+    const nameError = validateName(trainer.name);
+    const descriptionError = validateDescription(trainer.description);
+    const ratingError = validateRating(trainer.rating);
+    const imageUrlError = validateImageUrl(trainer.imageUrl);
+
+    setFieldErrors({
+      name: nameError,
+      description: descriptionError,
+      rating: ratingError,
+      imageUrl: imageUrlError
+    });
+
+    if (nameError || descriptionError || ratingError || imageUrlError) {
+      setErrorMessage("Please fix the errors above");
+      setSubmitStatus('error');
+      return;
+    }
+
     setLoading(true);
 
-    if (!trainer.name.trim()) {
-      setErrorMessage("Trainer name is required");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (trainer.name.trim().length < 3) {
-      setErrorMessage("Trainer name must be at least 3 characters long");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (trainer.name.trim().length > 200) {
-      setErrorMessage("Trainer name cannot exceed 200 characters");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (!trainer.description.trim()) {
-      setErrorMessage("Description is required");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (trainer.description.trim().length < 10) {
-      setErrorMessage("Description must be at least 10 characters long");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (trainer.description.trim().length > 1000) {
-      setErrorMessage("Description cannot exceed 1000 characters");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (!trainer.rating || trainer.rating === "") {
-      setErrorMessage("Rating is required");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (isNaN(trainer.rating) || trainer.rating < 0.0 || trainer.rating > 5.0) {
-      setErrorMessage("Rating must be a number between 0.0 and 5.0");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    if (!trainer.imageUrl.trim()) {
-      setErrorMessage("Image URL is required");
-      setSubmitStatus('error');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const payload = {
+      const trainerData = {
         name: trainer.name.trim(),
         description: trainer.description.trim(),
         rating: parseFloat(trainer.rating),
         imageUrl: trainer.imageUrl.trim(),
       };
 
-      await adminService.createTrainer(payload);
+      await adminService.createTrainer(trainerData);
       
       setSubmitStatus('success');
+      setTrainer({ name: "", description: "", rating: "", imageUrl: "" });
+      setFieldErrors({});
       
-      setTrainer({
-        name: "",
-        description: "",
-        rating: "",
-        imageUrl: "",
-      });
-
       setTimeout(() => {
-        navigate("/admin/trainers");
+        navigate('/admin/trainers');
       }, 2000);
-    } catch (err) {
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to create trainer');
       setSubmitStatus('error');
-      
-      let errorMessage = 'Failed to create trainer. Please try again.';
-      
-      if (err.status === 403) {
-        errorMessage = 'Access denied. You may not have permission to create trainers. Please check if you are logged in as an admin.';
-      } else if (err.status === 401) {
-        errorMessage = 'Authentication required. Please login again as an admin.';
-      } else if (err.status === 400) {
-        errorMessage = `Invalid data: ${err.message}`;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setErrorMessage(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -152,85 +152,12 @@ const CreateTrainer = () => {
         
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Add New Trainer</h1>
-          <p className="text-gray-600 mt-2">Create a new trainer account</p>
+          <h1 className="text-3xl font-bold text-gray-900">Create New Trainer</h1>
+          <p className="text-gray-600 mt-2">Add a new trainer to the platform</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-8">
-          
-          {/* Trainer Preview */}
-          {(trainer.name || trainer.description || trainer.rating) && (
-            <div className="mb-8 p-6 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Trainer Preview</h3>
-              <div className="flex items-start space-x-4">
-                {/* Trainer Image - Only show if URL is provided */}
-                {trainer.imageUrl && (
-                  <div className="flex-shrink-0">
-                    <img
-                      src={trainer.imageUrl}
-                      alt={trainer.name || "Trainer"}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                    />
-                  </div>
-                )}
-                
-                {/* Trainer Info */}
-                <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-gray-900">
-                    {trainer.name || "Trainer Name"}
-                  </h4>
-                  
-                  {/* Rating */}
-                  {trainer.rating && (
-                    <div className="flex items-center mt-1 mb-2">
-                      <div className="flex text-yellow-400">
-                        {[1, 2, 3, 4, 5].map((star) => {
-                          const rating = parseFloat(trainer.rating) || 0;
-                          const filled = rating >= star;
-                          const partiallyFilled = rating > star - 1 && rating < star;
-                          const fillPercentage = partiallyFilled ? ((rating - (star - 1)) * 100) : 0;
-                          
-                          return (
-                            <div key={star} className="relative w-4 h-4">
-                              {/* Background star (empty) */}
-                              <svg
-                                className="absolute inset-0 w-4 h-4 fill-gray-300"
-                                viewBox="0 0 20 20"
-                              >
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              
-                              {/* Filled star */}
-                              {(filled || partiallyFilled) && (
-                                <div 
-                                  className="absolute inset-0 overflow-hidden"
-                                  style={{ 
-                                    width: filled ? '100%' : `${fillPercentage}%` 
-                                  }}
-                                >
-                                  <svg
-                                    className="w-4 h-4 fill-yellow-400"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <span className="text-gray-600 text-sm ml-2">{trainer.rating || '0.0'}</span>
-                    </div>
-                  )}
-                  
-                  <p className="text-gray-600 text-sm">
-                    {trainer.description || "Trainer description will appear here..."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Form Card */}
+        <div className="bg-white rounded-lg shadow p-6">
           
           {/* Success Message */}
           {submitStatus === 'success' && (
@@ -244,17 +171,17 @@ const CreateTrainer = () => {
             </div>
           )}
 
-              {/* Error Message */}
-              {submitStatus === 'error' && (
-                <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded transition-opacity duration-500">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    <span>{errorMessage || "Failed to create trainer. Please try again."}</span>
-                  </div>
-                </div>
-              )}
+          {/* Error Message */}
+          {submitStatus === 'error' && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded transition-opacity duration-500">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span>{errorMessage || "Failed to create trainer. Please try again."}</span>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -267,14 +194,19 @@ const CreateTrainer = () => {
                 <input
                   type="text"
                   value={trainer.name}
-                  onChange={(e) => setTrainer({ ...trainer, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter trainer's full name (3-200 characters)"
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                    fieldErrors.name 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-gray-300 focus:ring-indigo-500'
+                  }`}
+                  placeholder="Enter trainer's name (alphabets only)"
                   required
                   disabled={loading}
-                  minLength={3}
-                  maxLength={200}
                 />
+                {fieldErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                )}
               </div>
 
               {/* Rating */}
@@ -285,15 +217,22 @@ const CreateTrainer = () => {
                 <input
                   type="number"
                   step="0.1"
-                  min="0"
+                  min="1"
                   max="5"
                   value={trainer.rating}
-                  onChange={(e) => setTrainer({ ...trainer, rating: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter rating (0.0-5.0)"
+                  onChange={(e) => handleFieldChange('rating', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                    fieldErrors.rating 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-gray-300 focus:ring-indigo-500'
+                  }`}
+                  placeholder="Enter rating (1.0-5.0)"
                   required
                   disabled={loading}
                 />
+                {fieldErrors.rating && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.rating}</p>
+                )}
               </div>
 
               {/* Trainer Image URL */}
@@ -304,14 +243,21 @@ const CreateTrainer = () => {
                 <input
                   type="url"
                   value={trainer.imageUrl}
-                  onChange={(e) => setTrainer({ ...trainer, imageUrl: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onChange={(e) => handleFieldChange('imageUrl', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                    fieldErrors.imageUrl 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-gray-300 focus:ring-indigo-500'
+                  }`}
                   placeholder="https://example.com/trainer-photo.jpg"
                   required
                   disabled={loading}
                 />
+                {fieldErrors.imageUrl && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.imageUrl}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
-                  Provide a URL to the trainer's profile image.
+                  Provide a URL to the trainer's profile image (jpg, jpeg, png, gif, webp).
                 </p>
               </div>
 
@@ -322,18 +268,24 @@ const CreateTrainer = () => {
                 </label>
                 <textarea
                   value={trainer.description}
-                  onChange={(e) => setTrainer({ ...trainer, description: e.target.value })}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Describe the trainer's background, expertise, and teaching experience (10-1000 characters)..."
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                    fieldErrors.description 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-gray-300 focus:ring-indigo-500'
+                  }`}
+                  placeholder="Describe the trainer's background, expertise, and teaching experience..."
                   required
                   disabled={loading}
-                  minLength={10}
-                  maxLength={1000}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  This will be displayed on the trainer's profile and course pages.
-                </p>
+                {fieldErrors.description && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.description}</p>
+                )}
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Minimum 10 characters, maximum 1000 characters</span>
+                  <span>{trainer.description.length}/1000</span>
+                </div>
               </div>
             </div>
 
@@ -349,9 +301,9 @@ const CreateTrainer = () => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || Object.values(fieldErrors).some(error => error)}
                 className={`px-6 py-2 rounded-md transition-colors duration-200 ${
-                  loading 
+                  loading || Object.values(fieldErrors).some(error => error)
                     ? 'bg-gray-400 cursor-not-allowed text-white' 
                     : 'bg-indigo-500 hover:bg-indigo-600 text-white'
                 }`}
@@ -360,6 +312,7 @@ const CreateTrainer = () => {
               </button>
             </div>
           </form>
+
         </div>
       </div>
     </div>

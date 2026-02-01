@@ -15,6 +15,30 @@ const ContactUs = () => {
   const { loading, error, execute: submitContact } = useApi(contactService.submitContactForm);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [isSuccessFading, setIsSuccessFading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // Validation functions
+  const validateName = (name) => {
+    if (!name.trim()) return "Name is required";
+    if (name.trim().length < 3) return "Name must be at least 3 characters";
+    if (name.trim().length > 100) return "Name must be less than 100 characters";
+    if (!/^[a-zA-Z]+$/.test(name.trim())) return "Name can only contain alphabets (no spaces, numbers, or special characters)";
+    return "";
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) return "Email is required";
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validateMessage = (message) => {
+    if (!message.trim()) return "Message is required";
+    if (message.trim().length < 10) return "Message must be at least 10 characters";
+    if (message.trim().length > 2000) return "Message must be less than 2000 characters";
+    return "";
+  };
 
   // Load user data from AuthContext
   useEffect(() => {
@@ -53,38 +77,47 @@ const ContactUs = () => {
     }
   }, [submitStatus]);
 
+  // Real-time field validation
+  const handleFieldChange = (field, value) => {
+    // Only allow changes to fields that are not disabled
+    if (user && (field === 'name' || field === 'email')) {
+      return; // Prevent changes to name/email for logged-in users
+    }
+    
+    setForm(prev => ({ ...prev, [field]: value }));
+    
+    let error = "";
+    switch (field) {
+      case 'name':
+        error = validateName(value);
+        break;
+      case 'email':
+        error = validateEmail(value);
+        break;
+      case 'message':
+        error = validateMessage(value);
+        break;
+    }
+    
+    setFieldErrors(prev => ({ ...prev, [field]: error }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitStatus(null);
 
-    // Frontend validation
-    if (!form.name.trim()) {
-      setSubmitStatus('error');
-      return;
-    }
+    // Comprehensive frontend validation
+    const nameError = validateName(form.name);
+    const emailError = validateEmail(form.email);
+    const messageError = validateMessage(form.message);
 
-    if (form.name.trim().length < 3 || form.name.trim().length > 100) {
-      setSubmitStatus('error');
-      return;
-    }
+    setFieldErrors({
+      name: nameError,
+      email: emailError,
+      message: messageError
+    });
 
-    if (!form.email.trim()) {
-      setSubmitStatus('error');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      setSubmitStatus('error');
-      return;
-    }
-
-    if (!form.message.trim()) {
-      setSubmitStatus('error');
-      return;
-    }
-
-    if (form.message.trim().length < 10 || form.message.trim().length > 2000) {
+    if (nameError || emailError || messageError) {
       setSubmitStatus('error');
       return;
     }
@@ -106,6 +139,7 @@ const ContactUs = () => {
           ...prev,
           message: ""
         }));
+        setFieldErrors(prev => ({ ...prev, message: "" }));
       } else {
         // For guest users, reset all fields
         setForm({
@@ -113,6 +147,7 @@ const ContactUs = () => {
           email: "",
           message: ""
         });
+        setFieldErrors({});
       }
     } catch (err) {
       setSubmitStatus('error');
@@ -120,15 +155,7 @@ const ContactUs = () => {
   };
 
   const handleChange = (e) => {
-    // Only allow changes to fields that are not disabled
-    if (user && (e.target.name === 'name' || e.target.name === 'email')) {
-      return; // Prevent changes to name/email for logged-in users
-    }
-    
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    handleFieldChange(e.target.name, e.target.value);
   };
 
   return (
@@ -212,14 +239,20 @@ const ContactUs = () => {
                   className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
                     user 
                       ? 'bg-gray-50 border-gray-200 text-gray-700 cursor-not-allowed' 
-                      : 'bg-white border-gray-200 text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
+                      : fieldErrors.name
+                        ? 'bg-white border-red-500 text-gray-900 focus:border-red-500 focus:ring-4 focus:ring-red-100'
+                        : 'bg-white border-gray-200 text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
                   }`}
                   required
                   disabled={loading || !!user}
-                  minLength={3}
-                  maxLength={100}
-                  placeholder={user ? "Filled from your profile" : "Enter your full name (3-100 characters)"}
+                  placeholder={user ? "Filled from your profile" : "Enter your name (alphabets only)"}
                 />
+                {fieldErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
+                )}
+                {!user && (
+                  <p className="text-xs text-gray-500">3-100 characters, alphabets only</p>
+                )}
               </div>
 
               {/* Email Field */}
@@ -238,12 +271,17 @@ const ContactUs = () => {
                   className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
                     user 
                       ? 'bg-gray-50 border-gray-200 text-gray-700 cursor-not-allowed' 
-                      : 'bg-white border-gray-200 text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
+                      : fieldErrors.email
+                        ? 'bg-white border-red-500 text-gray-900 focus:border-red-500 focus:ring-4 focus:ring-red-100'
+                        : 'bg-white border-gray-200 text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
                   }`}
                   required
                   disabled={loading || !!user}
                   placeholder={user ? "Filled from your profile" : "Enter your valid email address"}
                 />
+                {fieldErrors.email && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+                )}
               </div>
 
               {/* Message Field */}
@@ -256,26 +294,31 @@ const ContactUs = () => {
                     name="message"
                     value={form.message}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-900 placeholder-gray-500 resize-none transition-all duration-200 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 h-40"
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-900 placeholder-gray-500 resize-none transition-all duration-200 h-40 ${
+                      fieldErrors.message
+                        ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-100'
+                        : 'border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
+                    }`}
                     required
                     disabled={loading}
-                    minLength={10}
-                    maxLength={2000}
                     placeholder="Tell us how we can help you... (minimum 10 characters)"
                   />
                   <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white px-2 py-1 rounded">
                     {form.message.length}/2000
                   </div>
                 </div>
+                {fieldErrors.message && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.message}</p>
+                )}
               </div>
 
               {/* Submit Button */}
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || Object.values(fieldErrors).some(error => error)}
                   className={`w-full py-4 px-8 rounded-xl font-semibold text-lg transition-all duration-200 ${
-                    loading 
+                    loading || Object.values(fieldErrors).some(error => error)
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                       : 'bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-700 focus:ring-4 focus:ring-blue-200 transform hover:scale-[1.02] active:scale-[0.98]'
                   }`}

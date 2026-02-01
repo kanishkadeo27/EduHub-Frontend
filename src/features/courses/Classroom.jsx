@@ -1,29 +1,31 @@
 import { useParams, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useProgress } from '../../context/ProgressContext';
 import { courseService } from '../../api';
 import PdfViewer from '../../components/common/PdfViewer';
 
 const Classroom = () => {
-  const { id } = useParams(); // Course ID from URL
+  const { id } = useParams();
   const location = useLocation();
-  const passedCourseData = location.state?.courseData; // Course data passed from EnrolledCourseCard
-  const { markVideoCompleted, markVideoIncomplete, isVideoCompleted } = useProgress();
+  const passedCourseData = location.state?.courseData;
+  
+  // All hooks must be at the top level and called in the same order every time
+  const { markVideoCompleted, markVideoIncomplete, isVideoCompleted, syncingProgress } = useProgress();
+  
+  // All useState hooks
   const [selectedLesson, setSelectedLesson] = useState(0);
-  const [selectedContent, setSelectedContent] = useState('video'); // 'video' or 'pdf'
+  const [selectedContent, setSelectedContent] = useState('video');
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [videoError, setVideoError] = useState(false);
 
-  // Fetch course content from API
+  // All useEffect hooks
   useEffect(() => {
     const fetchCourseContent = async () => {
       try {
         setLoading(true);
         
-        
-        // Use passed course data if available, otherwise fetch from API
         let courseData;
         if (passedCourseData) {
           const detailedData = await courseService.getCourseById(id);
@@ -33,13 +35,12 @@ const Classroom = () => {
           courseData = data.data.data || data.data;
         }
         
-        // Map API response to component expectations
         const mappedCourse = {
           id: parseInt(id),
           courseName: courseData.title,
           description: courseData.description,
           trainer: courseData.trainer,
-          // Process lessons to group videos and PDFs together
+          serverProgress: courseData.progress, // Keep null if server has null
           lessons: courseData.syllabus.lessons.map(lesson => ({
             id: lesson.id,
             lessonName: lesson.lessonName,
@@ -48,7 +49,6 @@ const Classroom = () => {
             pdf: lesson.materials.find(material => material.type === 'PDF'),
             materials: lesson.materials
           })) || [],
-          // Keep separate arrays for backward compatibility
           videos: courseData.syllabus.lessons.flatMap(lesson => 
             lesson.materials.filter(material => material.type === 'VIDEO').map(video => ({
               id: video.id,
@@ -74,11 +74,10 @@ const Classroom = () => {
 
         setCourse(mappedCourse);
         
-        // Set default content type based on available content
         const firstLesson = mappedCourse.lessons[0];
-        if (firstLesson.video) {
+        if (firstLesson?.video) {
           setSelectedContent('video');
-        } else if (firstLesson.pdf) {
+        } else if (firstLesson?.pdf) {
           setSelectedContent('pdf');
         }
         
@@ -95,6 +94,25 @@ const Classroom = () => {
     }
   }, [id, passedCourseData]);
 
+  // All useCallback hooks
+  const handleLessonComplete = useCallback((lessonId, videoId) => {
+    if (!course?.videos) return;
+    const totalVideos = course.videos.length;
+    markVideoCompleted(course.id, videoId, totalVideos);
+  }, [course, markVideoCompleted]);
+
+  const handleLessonIncomplete = useCallback((lessonId, videoId) => {
+    if (!course?.videos) return;
+    const totalVideos = course.videos.length;
+    markVideoIncomplete(course.id, videoId, totalVideos);
+  }, [course, markVideoIncomplete]);
+
+  const isLessonCompleted = useCallback((lesson) => {
+    if (!lesson?.video || !course?.id) return false;
+    return isVideoCompleted(course.id, lesson.video.id);
+  }, [course?.id, isVideoCompleted]);
+
+  // Early returns after all hooks
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -158,39 +176,17 @@ const Classroom = () => {
     );
   }
 
-  const currentLesson = course && course.lessons && course.lessons.length > 0 ? course.lessons[selectedLesson] : null;
+  // Calculate variables after all hooks and early returns
+  const currentLesson = course.lessons[selectedLesson] || null;
   const currentVideo = currentLesson?.video;
   const currentPdf = currentLesson?.pdf;
   
-  // Calculate progress based on completed lessons
   const totalLessons = course.lessons.length;
-  const completedLessons = course.lessons.filter(lesson => 
-    lesson.video ? isVideoCompleted(course.id, lesson.video.id) : false
-  ).length;
-  const progress = Math.round((completedLessons / totalLessons) * 100);
-
-  const handleLessonComplete = (lessonId, videoId) => {
-    markVideoCompleted(course.id, videoId);
-  };
-
-  const handleLessonIncomplete = (lessonId, videoId) => {
-    markVideoIncomplete(course.id, videoId);
-  };
-
-  const switchToLesson = (index) => {
-    setSelectedLesson(index);
-    setVideoError(false); // Reset video error when switching lessons
-    const lesson = course.lessons[index];
-    if (lesson.video) {
-      setSelectedContent('video');
-    } else if (lesson.pdf) {
-      setSelectedContent('pdf');
-    }
-  };
-
-  const isLessonCompleted = (lesson) => {
-    return lesson.video ? isVideoCompleted(course.id, lesson.video.id) : false;
-  };
+  const completedLessons = course.lessons.filter(lesson => {
+    if (!lesson.video) return false;
+    return isVideoCompleted(course.id, lesson.video.id);
+  }).length;
+  const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-2">
@@ -218,8 +214,11 @@ const Classroom = () => {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{course.courseName}</h1>
           <div className="flex items-center space-x-4">
-            <div className="bg-indigo-100 rounded-full px-4 py-2">
+            <div className="bg-indigo-100 rounded-full px-4 py-2 flex items-center space-x-2">
               <span className="text-indigo-800 font-semibold">Progress: {progress}%</span>
+              {syncingProgress && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+              )}
             </div>
             <div className="bg-gray-100 rounded-full px-4 py-2">
               <span className="text-gray-700">
@@ -278,93 +277,57 @@ const Classroom = () => {
                     <div className="flex-1 flex flex-col">
                       {/* Video Player Area */}
                       <div className="flex-1 bg-black relative">
-                        {(() => {
-                          let videoUrl = currentVideo.path;
-                          let embedUrl = videoUrl;
-                          
-                          // Handle different YouTube URL formats
-                          if (videoUrl.includes('youtube.com/watch?v=')) {
-                            const videoId = videoUrl.split('v=')[1]?.split('&')[0];
-                            embedUrl = `https://www.youtube.com/embed/${videoId}`;
-                          } else if (videoUrl.includes('youtu.be/')) {
-                            const videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
-                            embedUrl = `https://www.youtube.com/embed/${videoId}`;
-                          } else if (videoUrl.includes('youtube.com/embed/')) {
-                            embedUrl = videoUrl;
-                          }
-                          
-                          return (
-                            <iframe
-                              width="100%"
-                              height="100%"
-                              src={embedUrl}
-                              title={currentVideo.title}
-                              style={{ border: 0 }}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                              className="w-full h-full"
-                              onError={() => {
-                                setVideoError(true);
-                              }}
-                              onLoad={() => {
-                                setVideoError(false);
-                              }}
-                            />
-                          );
-                        })()}
-                        
-                        {videoError && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md">
-                              <div className="flex items-center">
-                                <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        {!videoError ? (
+                          <iframe
+                            width="100%"
+                            height="100%"
+                            src={currentVideo.url}
+                            title={currentVideo.title}
+                            style={{ border: 0 }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            onError={() => setVideoError(true)}
+                          ></iframe>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center text-white">
+                              <div className="text-red-400 mb-4">
+                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <div>
-                                  <p className="text-sm font-medium text-yellow-800">Video Loading Issue</p>
-                                  <p className="text-sm text-yellow-700">If the video doesn't load, try opening it directly in YouTube.</p>
-                                </div>
                               </div>
+                              <h3 className="text-lg font-semibold mb-2">Video Failed to Load</h3>
+                              <p className="text-gray-300 mb-4">There was an error loading this video.</p>
+                              <button
+                                onClick={() => setVideoError(false)}
+                                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                              >
+                                Try Again
+                              </button>
                             </div>
                           </div>
                         )}
                       </div>
                       
-                      {/* Video Controls - Always Visible */}
-                      <div className="p-4 bg-white border-t flex-shrink-0">
-                        <div className="flex items-start justify-between mb-3">
+                      {/* Video Controls */}
+                      <div className="p-4 bg-white border-t">
+                        <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <h2 className="text-lg font-bold text-gray-900 mb-1 truncate">{currentVideo.title}</h2>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 mb-1">
                               Lesson {currentLesson.lessonNo}: {currentLesson.lessonName}
                             </p>
-                          </div>
-                          <div className="ml-4 flex-shrink-0">
-                            {isLessonCompleted(currentLesson) ? (
-                              <div className="flex items-center text-green-600">
-                                <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-sm font-medium">Completed</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center text-gray-400">
-                                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <circle cx="12" cy="12" r="10"/>
-                                </svg>
-                                <span className="text-sm font-medium">Not Completed</span>
-                              </div>
-                            )}
+                            <p className="text-xs text-gray-500">Duration: {currentVideo.duration || 'N/A'}</p>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-4">
                           <button
                             onClick={() => handleLessonComplete(currentLesson.id, currentVideo.id)}
                             className={`px-4 py-2 rounded-lg transition-colors font-medium text-sm ${
                               isLessonCompleted(currentLesson)
                                 ? 'bg-green-500 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                : 'bg-indigo-500 text-white hover:bg-indigo-600'
                             }`}
                           >
                             {isLessonCompleted(currentLesson) ? '✓ Completed' : 'Mark Complete'}
@@ -441,20 +404,15 @@ const Classroom = () => {
                               onClick={() => setSelectedContent('video')}
                               className="ml-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm flex-shrink-0"
                             >
-                              📹 Watch Video
+                              � Watch Video
                             </button>
                           )}
                         </div>
                       </div>
                       
                       {/* PDF Content */}
-                      <div className="flex-1 p-4">
-                        <PdfViewer
-                          pdfUrl={currentPdf.path}
-                          title={currentPdf.title}
-                          height="100%"
-                          showControls={true}
-                        />
+                      <div className="flex-1 overflow-hidden">
+                        <PdfViewer url={currentPdf.url} />
                       </div>
                     </div>
                   ) : (
@@ -483,79 +441,71 @@ const Classroom = () => {
             </div>
           </div>
 
-          {/* Content Playlist */}
+          {/* Lesson Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden h-[600px] flex flex-col">
-              <div className="p-4 border-b border-gray-200 flex-shrink-0">
-                <h3 className="text-lg font-bold text-gray-900">Course Lessons</h3>
-              </div>
-              
-              {/* Lessons List */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-2 space-y-1">
-                  {course.lessons.map((lesson, index) => (
-                    <div
-                      key={lesson.id}
-                      onClick={() => switchToLesson(index)}
-                      className={`p-3 rounded-md cursor-pointer transition-all duration-200 ${
-                        selectedLesson === index
-                          ? 'bg-indigo-50 border-l-4 border-indigo-500'
-                          : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center mb-1">
-                            <span className="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded mr-2 flex-shrink-0">
-                              {lesson.lessonNo}
-                            </span>
-                            {isLessonCompleted(lesson) && (
-                              <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <h5 className="font-medium text-gray-900 text-sm leading-tight mb-1 truncate">{lesson.lessonName}</h5>
-                          
-                          <div className="flex items-center space-x-2">
-                            {lesson.video && (
-                              <div className="flex items-center text-red-500">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                                </svg>
-                              </div>
-                            )}
-                            {lesson.pdf && (
-                              <div className="flex items-center text-blue-500">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Progress Summary */}
-              <div className="p-4 bg-gray-50 border-t border-gray-200 flex-shrink-0">
-                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Progress Summary</h4>
-                <div className="text-xs text-gray-600 space-y-1">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-4 bg-gray-50 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">Course Content</h3>
+                <div className="mt-2 space-y-1 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Total Lessons:</span>
+                    <span className="font-medium">{totalLessons}</span>
+                  </div>
                   <div className="flex justify-between">
                     <span>Completed:</span>
-                    <span className="font-medium">{completedLessons} / {totalLessons}</span>
+                    <span className="font-medium text-green-600">{completedLessons}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Progress:</span>
                     <span className="font-medium text-indigo-600">{progress}%</span>
                   </div>
                 </div>
+              </div>
+              
+              <div className="max-h-96 overflow-y-auto">
+                {course.lessons.map((lesson, index) => (
+                  <div
+                    key={lesson.id}
+                    className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${
+                      selectedLesson === index
+                        ? 'bg-indigo-50 border-l-4 border-l-indigo-500'
+                        : 'hover:bg-gray-50'
+                    }`}
+                    onClick={() => setSelectedLesson(index)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-xs font-medium text-gray-500">
+                            Lesson {lesson.lessonNo}
+                          </span>
+                          {isLessonCompleted(lesson) && (
+                            <span className="text-green-500">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">
+                          {lesson.lessonName}
+                        </h4>
+                        <div className="flex items-center space-x-3 mt-2">
+                          {lesson.video && (
+                            <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                              📹 Video
+                            </span>
+                          )}
+                          {lesson.pdf && (
+                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                              📄 PDF
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

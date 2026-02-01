@@ -54,6 +54,47 @@ const courseService = {
     }
   },
 
+  // Update course progress (requires authentication)
+  updateCourseProgress: async (courseId, progress) => {
+    try {
+      console.log(`🌐 API Call: PUT /user/progress`, { 
+        updates: [{ courseId, progress }] 
+      });
+      
+      const response = await apiClient.put('/user/progress', {
+        updates: [
+          {
+            courseId: courseId,
+            progress: progress
+          }
+        ]
+      });
+      
+      console.log('🌐 API Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('🌐 API Error:', error);
+      throw error;
+    }
+  },
+
+  // Update multiple course progress in batch (requires authentication)
+  updateMultipleCourseProgress: async (progressUpdates) => {
+    try {
+      console.log(`🌐 API Call: PUT /user/progress (batch)`, { updates: progressUpdates });
+      
+      const response = await apiClient.put('/user/progress', {
+        updates: progressUpdates
+      });
+      
+      console.log('🌐 API Response (batch):', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('🌐 API Error (batch):', error);
+      throw error;
+    }
+  },
+
   // Create new course with content (admin only)
   createCourse: async (courseData) => {
     try {

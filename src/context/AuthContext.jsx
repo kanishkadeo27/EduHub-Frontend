@@ -177,13 +177,55 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function with progress sync
   const logout = async () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    // Clear course progress data on logout
-    localStorage.removeItem("courseProgress");
-    setUser(null);
+    try {
+      // Try to sync progress before logout
+      const progressData = localStorage.getItem('courseProgress');
+      if (progressData) {
+        const courseProgress = JSON.parse(progressData);
+        const coursesToSync = [];
+        
+        Object.keys(courseProgress).forEach(courseId => {
+          const courseData = courseProgress[courseId] || {};
+          const completedVideos = Object.values(courseData).filter(Boolean).length;
+          const totalVideos = parseInt(localStorage.getItem(`course_${courseId}_total_videos`)) || 0;
+          
+          if (totalVideos > 0) {
+            const progressPercentage = Math.round((completedVideos / totalVideos) * 100);
+            coursesToSync.push({
+              courseId: parseInt(courseId),
+              progress: progressPercentage
+            });
+          }
+        });
+
+        if (coursesToSync.length > 0) {
+          console.log('🔄 Syncing progress before logout');
+          const { courseService } = await import('../api');
+          await courseService.updateMultipleCourseProgress(coursesToSync);
+          console.log('✅ Progress synced before logout');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to sync progress during logout:', error);
+    } finally {
+      // Always clear data even if sync fails
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("courseProgress");
+      localStorage.removeItem("courseProgressLastUpdate");
+      localStorage.removeItem("courseProgressLastSync");
+      
+      // Clear course-specific data
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('course_') && key.endsWith('_total_videos')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      setUser(null);
+    }
   };
 
   // Helper function to normalize role (handles ROLE_USER/ROLE_ADMIN format)

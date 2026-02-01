@@ -17,11 +17,14 @@ const EnrolledCourseCard = ({ course }) => {
     level,
     mode,
     language,
-    totalVideos
+    totalVideos,
+    serverProgress
   } = course;
 
-  // Get progress for this course
-  const progress = getCourseProgress(id, totalVideos);
+  // Use server progress if it's a number, otherwise fall back to local progress
+  const progress = (serverProgress !== null && serverProgress !== undefined) 
+    ? serverProgress 
+    : getCourseProgress(id, totalVideos);
 
   // Function to get the correct image source
   const getImageSrc = (imageId) => {
